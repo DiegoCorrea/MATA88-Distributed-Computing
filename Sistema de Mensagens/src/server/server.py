@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import rpyc
+import sys
+from .user import User
+sys.path.append('..')
 
 userList = { }
 groupList = { }

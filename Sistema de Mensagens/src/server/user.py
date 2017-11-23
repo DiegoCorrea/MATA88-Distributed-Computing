@@ -5,12 +5,12 @@ class User:
     id = ''
     groupList = []
     def __init__(self, name):
-        self.id = uuid.uuid1()
+        self.id =  str(uuid.uuid1())
         self.name = name
         pass
     def getId(self):
         return self.id
-    def getName(self)
+    def getName(self):
         return self.name
     def getGroupList(self):
         return self.groupList

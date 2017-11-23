@@ -7,7 +7,6 @@ class User:
     def __init__(self, name):
         self.id =  str(uuid.uuid1())
         self.name = name
-        pass
     def getId(self):
         return self.id
     def getName(self):

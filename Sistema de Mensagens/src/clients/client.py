@@ -19,7 +19,7 @@ def printMenu():
 def userMenu():
     userName = ''
     print('1 - Criar Usuario')
-    print('2 - Listar Usuarios')
+    print('2 - Listar Amigos')
     print('0 - Sair')
     menuChoice = int(input("Escolha: "))
     return menuChoice
@@ -41,13 +41,15 @@ def makeUser():
     user = conn.root.createUser(loginName)
     conn.close()
 
-def allUser():
+def userFriends():
     conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-    users = conn.root.allUsersList()
-    print('users: ', users)
-    #for user in users:
-    #    print('ID: ', user.value())
-    #    print('Name: ', user.User.getName())
+    users = conn.root.allUsersFriends()
+    print('\t\t---- User Friends ----')
+    print('Action type: ', users['type'])
+    for user in users['payload']:
+        print('ID: ', user['id'])
+        print('Name: ', user['name'])
+    print('\n\n')
     conn.close()
 
 def userScreen():
@@ -56,7 +58,7 @@ def userScreen():
         if menuChoice is 1:
             makeUser()
         elif menuChoice is 2:
-            allUser()
+            userFriends()
         else:
             pass
         menuChoice = userMenu()

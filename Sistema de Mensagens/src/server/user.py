@@ -1,12 +1,15 @@
 import uuid
+import logging
 
 class User:
     name = ''
     id = ''
     groupList = []
     def __init__(self, name):
-        self.id =  str(uuid.uuid1())
+        logging.info('[User __init__] Inicio')
+        self.id =  uuid.uuid1()
         self.name = name
+        logging.info('[User __init__] Fim')
     def getId(self):
         return self.id
     def getName(self):

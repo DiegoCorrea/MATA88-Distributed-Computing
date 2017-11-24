@@ -5,8 +5,8 @@ sys.path.append('..')
 from user import User
 import logging
 
-userList = { }
-groupList = { }
+userList = []
+groupList = []
 
 class ServerService(rpyc.Service):
     userConected = None
@@ -24,11 +24,19 @@ class ServerService(rpyc.Service):
     #
     @classmethod # this is an exposed method
     def exposed_createUser(cls, loginName):
-        logging.info('Criando Usuario com login: ', str(loginName))
+        logging.info('[createUser] Start')
         newUser = User(loginName)
-        userList.setdefault(newUser.getId(), newUser)
-        logging.debug('Usuario Criado com sucesso: ', str(newUser.getId()), ' -> ', str(newUser.getName()))
-        return {'type': '@USER/DATA', 'payload': newUser}
+        userList.append(newUser)
+        response = {
+            'type': '@USER/CREATED', 
+            'payload': {
+                'id': str(newUser.getId()), 
+                'name': str(newUser.getName())
+            }
+        }
+        logging.info('[createUser] Response: ' + str(response))
+        logging.info('[createUser] End')
+        return response
     @classmethod # this is an exposed method
     def exposed_createGroup(cls, name):
         pass
@@ -66,20 +74,25 @@ class ServerService(rpyc.Service):
     def exposed_findGroupById(cls, id):
         pass
     #
-    # ALL
+    # ALL FRIENDS
     #
     @classmethod # this is an exposed method
-    def exposed_allUsersList(cls):
-        logging.info('Retornando lista de usuarios')
+    def exposed_allUsersFriends(cls):
+        logging.info('[allUsersFriends] Inicio')
         allUsers = []
         for user in userList:
             newUser = {
-            id: user.getId(),
-            name: user.getName()
+            'id': str(user.getId()),
+            'name': str(user.getName())
             }
             allUsers.append(newUser)
-        logging.info(userList)
-        return allUsers
+        response = {
+            'type': '@USER/FRIENDS', 
+            'payload': allUsers
+        }
+        logging.info('[allUsersFriends] Response: ' + str(response))
+        logging.info('[allUsersFriends] Fim ')
+        return response
     @classmethod # this is an exposed method
     def exposed_allGroupsList(cls):
         return userList

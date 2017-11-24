@@ -3,6 +3,7 @@ import rpyc
 import sys
 sys.path.append('..')
 from user import User
+from group import Group
 import logging
 
 userList = []
@@ -38,8 +39,20 @@ class ServerService(rpyc.Service):
         logging.info('[createUser] End')
         return response
     @classmethod # this is an exposed method
-    def exposed_createGroup(cls, name):
-        pass
+    def exposed_createGroup(cls, groupName):
+        logging.info('[createGroup] Start')
+        newGroup = Group(groupName)
+        groupList.append(newGroup)
+        response = {
+            'type': '@GROUP/CREATED', 
+            'payload': {
+                'id': str(newGroup.getId()), 
+                'name': str(newGroup.getName())
+            }
+        }
+        logging.info('[createGroup] Response: ' + str(response))
+        logging.info('[createGroup] End')
+        return response
     #
     # REMOVERS
     #
@@ -78,7 +91,7 @@ class ServerService(rpyc.Service):
     #
     @classmethod # this is an exposed method
     def exposed_allUsersFriends(cls):
-        logging.info('[allUsersFriends] Inicio')
+        logging.info('[allUsersFriends] Start')
         allUsers = []
         for user in userList:
             newUser = {
@@ -91,11 +104,25 @@ class ServerService(rpyc.Service):
             'payload': allUsers
         }
         logging.info('[allUsersFriends] Response: ' + str(response))
-        logging.info('[allUsersFriends] Fim ')
+        logging.info('[allUsersFriends] End ')
         return response
     @classmethod # this is an exposed method
     def exposed_allGroupsList(cls):
-        return userList
+        logging.info('[allGroupsList] Start')
+        allGroups = []
+        for group in groupList:
+            newGroup = {
+            'id': str(group.getId()),
+            'name': str(group.getName())
+            }
+            allGroups.append(newGroup)
+        response = {
+            'type': '@GROUP/ALL', 
+            'payload': allGroups
+        }
+        logging.info('[allGroupsList] Response: ' + str(response))
+        logging.info('[allGroupsList] End ')
+        return response
 if __name__ == "__main__":
     from rpyc.utils.server import ThreadedServer
     logging.basicConfig(filename='server.log', filemode='w',level=logging.DEBUG)

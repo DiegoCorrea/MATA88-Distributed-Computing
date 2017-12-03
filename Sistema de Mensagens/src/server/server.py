@@ -116,7 +116,7 @@ class ServerService(rpyc.Service):
     # ALL
     #
     @classmethod # this is an exposed method
-    def exposed_allUsersList(cls):
+    def exposed_allUsers(cls):
         logging.info('Retornando lista de usuarios')
         return allUsers()
     @classmethod # this is an exposed method

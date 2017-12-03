@@ -1,7 +1,8 @@
 import sys
 import rpyc
-from configs import SERVER_IP, SERVER_PORT
-from groupManager import groupScreen, makeGroup, allGroups
+
+SERVER_IP = 'localhost'
+SERVER_PORT = 27000
 
 def callCreateUser(userName):
     conn = rpyc.connect(SERVER_IP, SERVER_PORT)
@@ -18,9 +19,7 @@ def printMenu():
 def userMenu():
     userName = ''
     print('1 - Criar Usuario')
-    print('2 - Listar Amigos')
-    print('3 - Listar Grupos')
-    print('4 - Criar Grupos')
+    print('2 - Listar Usuarios')
     print('0 - Sair')
     menuChoice = int(input("Escolha: "))
     return menuChoice
@@ -42,25 +41,13 @@ def makeUser():
     user = conn.root.createUser(loginName)
     conn.close()
 
-def userFriends():
+def allUser():
     conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-    users = conn.root.allUsersFriends()
-    print('\t\t---- User Friends ----')
-    print('Action type: ', users['type'])
-    for user in users['payload']:
-        print('ID: ', user['id'])
-        print('Name: ', user['name'])
-    print('\n\n')
-    conn.close()
-def userGroups():
-    conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-    groups = conn.root.allUsersGroups()
-    print('\t\t---- User Group ----')
-    print('Action type: ', groups['type'])
-    for group in groups['payload']:
-        print('ID: ', group['id'])
-        print('Name: ', group['name'])
-    print('\n\n')
+    users = conn.root.allUsersList()
+    print('users: ', users)
+    #for user in users:
+    #    print('ID: ', user.value())
+    #    print('Name: ', user.User.getName())
     conn.close()
 
 def userScreen():
@@ -69,11 +56,7 @@ def userScreen():
         if menuChoice is 1:
             makeUser()
         elif menuChoice is 2:
-            userFriends()
-        elif menuChoice is 3:
-            allGroups()
-        elif menuChoice is 4:
-            makeGroup()
+            allUser()
         else:
             pass
         menuChoice = userMenu()

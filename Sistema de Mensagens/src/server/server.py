@@ -2,12 +2,16 @@
 import rpyc
 import sys
 sys.path.append('..')
-from user import User
-from group import Group
 import logging
+from models.user import User
+from models.group import Group
+from validation import loginValidation
 
-userList = []
-groupList = []
+from controllers.users import all as allUsers
+
+
+userList = { }
+groupList = { }
 
 class ServerService(rpyc.Service):
     userConected = None
@@ -25,34 +29,56 @@ class ServerService(rpyc.Service):
     #
     @classmethod # this is an exposed method
     def exposed_createUser(cls, loginName):
-        logging.info('[createUser] Start')
+        # Validate
+        validation = loginValidation(loginName)
+        if(len(validation) > 0):
+            logging.debug(validation)
+            return validation
+        # Persiste
         newUser = User(loginName)
-        userList.append(newUser)
-        response = {
-            'type': '@USER/CREATED', 
-            'payload': {
-                'id': str(newUser.getId()), 
-                'name': str(newUser.getName())
-            }
+        newUser.save()
+        # Return
+        data = {
+            'type': '@USER/DATA',
+            'payload': newUser
         }
-        logging.info('[createUser] Response: ' + str(response))
-        logging.info('[createUser] End')
-        return response
+        logging.debug(data)
+        return data
     @classmethod # this is an exposed method
-    def exposed_createGroup(cls, groupName):
-        logging.info('[createGroup] Start')
-        newGroup = Group(groupName)
-        groupList.append(newGroup)
-        response = {
-            'type': '@GROUP/CREATED', 
-            'payload': {
-                'id': str(newGroup.getId()), 
-                'name': str(newGroup.getName())
-            }
+    def exposed_createFriendship(cls, user, friend):
+        # Validate
+        validation = loginValidation(user)
+        if(len(validation) > 0):
+            logging.debug(validation)
+            return validation
+        # Persiste
+        newUser = User(user)
+        userList.setdefault(newUser.getId(), newUser)
+        # Return
+        data = {
+            'type': '@USER/DATA',
+            'payload': newUser
         }
-        logging.info('[createGroup] Response: ' + str(response))
-        logging.info('[createGroup] End')
-        return response
+        logging.debug(data)
+        return data
+    @classmethod # this is an exposed method
+    def exposed_createGroup(cls, group):
+        # Validate
+        validation = loginValidation(group)
+        if(len(validation) > 0):
+            logging.debug(validation)
+            return validation
+        # Persiste
+        newGroup = User(group)
+        userList.setdefault(newGroup.getId(), newGroup)
+        # Return
+        data = {
+            'type': '@USER/DATA',
+            'payload': newGroup
+        }
+        logging.debug(data)
+        return data
+        pass
     #
     # REMOVERS
     #
@@ -87,44 +113,12 @@ class ServerService(rpyc.Service):
     def exposed_findGroupById(cls, id):
         pass
     #
-    # ALL FRIENDS
+    # ALL
     #
     @classmethod # this is an exposed method
-    def exposed_allUsersFriends(cls):
-        logging.info('[allUsersFriends] Start')
-        allUsers = []
-        for user in userList:
-            newUser = {
-            'id': str(user.getId()),
-            'name': str(user.getName())
-            }
-            allUsers.append(newUser)
-        response = {
-            'type': '@USER/FRIENDS', 
-            'payload': allUsers
-        }
-        logging.info('[allUsersFriends] Response: ' + str(response))
-        logging.info('[allUsersFriends] End ')
-        return response
+    def exposed_allUsersList(cls):
+        logging.info('Retornando lista de usuarios')
+        return allUsers()
     @classmethod # this is an exposed method
     def exposed_allGroupsList(cls):
-        logging.info('[allGroupsList] Start')
-        allGroups = []
-        for group in groupList:
-            newGroup = {
-            'id': str(group.getId()),
-            'name': str(group.getName())
-            }
-            allGroups.append(newGroup)
-        response = {
-            'type': '@GROUP/ALL', 
-            'payload': allGroups
-        }
-        logging.info('[allGroupsList] Response: ' + str(response))
-        logging.info('[allGroupsList] End ')
-        return response
-if __name__ == "__main__":
-    from rpyc.utils.server import ThreadedServer
-    logging.basicConfig(filename='server.log', filemode='w',level=logging.DEBUG)
-    t = ThreadedServer(ServerService, port=27000)
-    t.start()
+        return userList

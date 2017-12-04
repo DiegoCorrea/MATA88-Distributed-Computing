@@ -110,3 +110,7 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_allGroupsList(cls):
         return userList
+    @classmethod # this is an exposed method
+    def exposed_loginUser(cls, loginIdentifier):
+        user = User.login()
+        return user

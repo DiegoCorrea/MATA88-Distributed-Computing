@@ -60,6 +60,24 @@ def userScreen():
         else:
             pass
         menuChoice = userMenu()
+def logOnSystem(loginIdentifier):
+    conn = rpyc.connect(SERVER_IP, SERVER_PORT)
+    user = conn.root.loginUser(loginIdentifier)
+    conn.close()
+def loginScreen():
+    print('##################')
+    print('# 1 - Logar')
+    print('# 2 - Criar Conta')
+    print('# 0 - Sair')
+    print('##################')
+    loginChoice = int(input("Escolha: "))
+    if(loginChoice == 1):
+        loginIdentifier = int(input("Digite o identificador: "))
+        return logOnSystem(loginIdentifier)
+    elif(loginChoice == 2):
+        pass
+    else:
+        exit()
 
 if __name__ == "__main__":
     userScreen()

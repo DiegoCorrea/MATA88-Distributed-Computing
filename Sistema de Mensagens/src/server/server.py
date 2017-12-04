@@ -7,7 +7,8 @@ from models.user import User
 from models.group import Group
 from validation import loginValidation
 
-from controllers.users import all as allUsers
+import controllers.friends as Friend
+import controllers.users as User
 
 
 userList = { }
@@ -45,21 +46,8 @@ class ServerService(rpyc.Service):
         logging.debug(data)
         return data
     @classmethod # this is an exposed method
-    def exposed_createFriendship(cls, user, friend):
-        # Validate
-        validation = loginValidation(user)
-        if(len(validation) > 0):
-            logging.debug(validation)
-            return validation
-        # Persiste
-        newUser = User(user)
-        userList.setdefault(newUser.getId(), newUser)
-        # Return
-        data = {
-            'type': '@USER/DATA',
-            'payload': newUser
-        }
-        logging.debug(data)
+    def exposed_createFriendship(cls, user_id, friend_id):
+        data = Friend.createFriendship(user_id, friend_id)
         return data
     @classmethod # this is an exposed method
     def exposed_createGroup(cls, group):
@@ -118,7 +106,7 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_allUsers(cls):
         logging.info('Retornando lista de usuarios')
-        return allUsers()
+        return User.all()
     @classmethod # this is an exposed method
     def exposed_allGroupsList(cls):
         return userList

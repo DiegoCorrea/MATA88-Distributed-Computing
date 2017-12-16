@@ -20,12 +20,12 @@ print('...Ok!')
 print('Friendship')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS friendships (
+        id CHAR(64) NOT NULL PRIMARY KEY,
         user_id CHAR(64) NOT NULL ,
         friend_id CHAR(64) NOT NULL,
         created_at DATE NOT NULL,
-        FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(friend_id) REFERENCES users(id),
-        PRIMARY KEY (user_id, friend_id)
+        FOREIGN KEY(user_id) REFERENCES users(email),
+        FOREIGN KEY(friend_id) REFERENCES users(email)
 );
 """)
 print('...Ok!')
@@ -33,10 +33,12 @@ print('User Message')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS user_messages (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        sender_id CHAR(32) NOT NULL,
+        chat_id CHAR(64) NOT NULL,
+        sender_id CHAR(64) NOT NULL,
         message TEXT NOT NULL,
         message_time TEXT NOT NULL,
-        FOREIGN KEY(sender_id) REFERENCES friendship(id)
+        FOREIGN KEY(sender_id) REFERENCES users(email),
+        FOREIGN KEY(chat_id) REFERENCES friendships(id)
 );
 """)
 print('...Ok!')

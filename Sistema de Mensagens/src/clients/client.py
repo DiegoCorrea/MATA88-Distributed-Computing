@@ -10,7 +10,7 @@ FRIENDSHIPS = []
 GROUPS = {}
 ######################################################
 def remoteAddFriend(email):
-    data = conn.root.createFriendship(email=email)
+    data = conn.root.createFriendship(friend_email=email)
     return data
 def addFriend(email):
     data = remoteAddFriend(email=email)
@@ -19,7 +19,7 @@ def addFriend(email):
         return None
     return data['payload']
 def remoteGetFriends():
-    data = conn.root.exposed_allFriends()
+    data = conn.root.allFriends()
     return data
 def getFriends():
     data = remoteGetFriends()
@@ -29,6 +29,9 @@ def getFriends():
     if data['type'] == '@USER/ZERO':
         print 'ATENÇÃO: ', data['payload']
         return []
+    print '---------------------------------------'
+    print data['payload']
+    print '---------------------------------------'
     return data['payload']
 def findFriend():
     pass

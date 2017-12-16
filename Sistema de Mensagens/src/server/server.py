@@ -59,7 +59,7 @@ class ServerService(rpyc.Service):
             }
         FriendController.createFriendship(cls.user.getemail(), friend_email)
         return {
-            'type:': '@USER/DATA',
+            'type': '@USER/DATA',
             'payload': FriendController.all(cls.user.getemail())
         }
     @classmethod # this is an exposed method
@@ -71,7 +71,7 @@ class ServerService(rpyc.Service):
                 'payload': 'Sem amigos na lista!'
             }
         return {
-            'type:': '@USER/DATA',
+            'type': '@USER/DATA',
             'payload': friendList
         }
     @classmethod # this is an exposed method
@@ -103,11 +103,11 @@ class ServerService(rpyc.Service):
         user = UserController.findBy_email(email)
         if user is None:
             return {
-                'type' : '@USER/NOTFOUND',
+                'type': '@USER/NOTFOUND',
                 'payload': 'Usuario não encontrado'
             }
         return {
-            'type': '@USER/DATA', 
+            'type': '@USER/DATA',
             'payload': user
         }
     @classmethod # this is an exposed method
@@ -134,11 +134,11 @@ class ServerService(rpyc.Service):
         cls.user = UserController.findBy_email(email)
         if cls.user is None:
             return {
-                'type' : '@USER/NOTFOUND',
+                'type': '@USER/NOTFOUND',
                 'payload': 'Usuario não encontrado'
             }
         return {
-            'type': '@USER/DATA', 
+            'type': '@USER/DATA',
             'payload': {
                 'name': cls.user.getName(),
                 'email': cls.user.getemail()

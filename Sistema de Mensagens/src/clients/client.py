@@ -1,69 +1,65 @@
-import sys
+# -*- coding: utf-8 -*-
+import sys, os
 import rpyc
-
+import re
 SERVER_IP = 'localhost'
 SERVER_PORT = 27000
+conn = rpyc.connect(SERVER_IP, SERVER_PORT)
+USER = {}
 
-def callCreateUser(userName):
-    conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-    newUser = conn.root.createUser(userName)
-    conn.close()
-    return newUser
+######################################################
+def addFriend():
+    pass
+def getFriends():
+    pass
+def findFriend():
+    pass
+def sendMessege():
+    pass
+def friendScreen():
+    pass
 
-def printMenu():
-    print('\t---- Menu ----')
-    print('1 - Usuarios')
-    print('2 - Grupos')
-    print('0 - Sair')
-
-def userMenu():
-    userName = ''
-    print('1 - Criar Usuario')
-    print('2 - Listar Usuarios')
-    print('0 - Sair')
-    menuChoice = int(input("Escolha: "))
-    return menuChoice
-
-def isUser():
-    userName = ''
-    while(len(userName) < 5):
-        print("\nDigite o seu login: ")
-        userName = sys.stdin.readline()
-    conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-    user = conn.root.findUserByName(userName)
-    conn.close()
-    return user
-
-def makeUser():
-    loginName = ''
-    loginName = raw_input("Novo Usuario: ")
-    conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-    user = conn.root.createUser(loginName)
-    conn.close()
-
-def allUser():
-    conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-    users = conn.root.allUsersList()
-    print('users: ', users)
-    #for user in users:
-    #    print('ID: ', user.value())
-    #    print('Name: ', user.User.getName())
-    conn.close()
-
+######################################################
 def userScreen():
-    menuChoice = userMenu()
+    menuChoice = -1
     while menuChoice != 0:
+        print('1 - Friend List')
+        print('2 - Group List')
+        print('0 - Sair')
+        menuChoice = int(input("Escolha: "))
         if menuChoice is 1:
-            makeUser()
+            friendScreen()
         elif menuChoice is 2:
-            allUser()
+            pass
         else:
             pass
-        menuChoice = userMenu()
-def logOnSystem(loginIdentifier):
-    conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-    user = conn.root.loginUser(loginIdentifier)
-    conn.close()
+###################################################
+def remoteLogOnSystem(email):
+    user = conn.root.userLogin(email)
+    return user
+def logIn(email):
+    if(re.match(r"[^@]+@[^@]+\.[^@]+", email) == ''):
+        print('ATENÇÃO -> Por Favor digite um e-mail Valido!')
+        return None
+    user = remoteLogOnSystem(email)
+    if(user['type'] == '@USER/NOTFOUND'):
+        print('ATENÇÃO -> ', user['payload'])
+    return user['payload']
+def remoteCreateUser(email, name):
+    userData = conn.root.createUser(email, name)
+    return userData
+def createAccount(email, name):
+    if(re.match(r"[^@]+@[^@]+\.[^@]+", email) == ''):
+        print('ATENÇÃO -> Por Favor digite um e-mail Valido!')
+        return None
+    if(len(name) < 3):
+        print('ATENÇÃO -> Um nome maior que 3 letras é necessario')
+        return None
+    userData = remoteCreateUser(email, name)
+    if (userData['type'] == 'VALIDATION/ERROR'):
+        print('ATENÇÃO: ', userData['payload'])
+        return None
+    return userData['payload']
 def loginScreen():
     print('##################')
     print('# 1 - Logar')
@@ -72,12 +68,30 @@ def loginScreen():
     print('##################')
     loginChoice = int(input("Escolha: "))
     if(loginChoice == 1):
-        loginIdentifier = int(input("Digite o identificador: "))
-        return logOnSystem(loginIdentifier)
+        user = None
+        while(user == None):
+            email = raw_input("Email: ")
+            user = logIn(email)
+        return user
     elif(loginChoice == 2):
-        pass
+        newUser = None
+        while(newUser == None):
+            print('Cadastrar nova conta')
+            email = raw_input("Email: ")
+            name = raw_input("Nome: ")
+            newUser = createAccount(name, email)
+        return newUser
     else:
+        os.system('cls||clear')
+        print('Programa finalizado com sucesso!')
+        conn.close()
         exit()
 
 if __name__ == "__main__":
-    userScreen()
+    os.system('cls||clear')
+    USER = loginScreen()
+    print('Usuario: ',USER)
+    if(USER):
+        os.system('cls||clear')
+        userScreen()
+    conn.close()

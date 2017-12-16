@@ -1,20 +1,21 @@
 import sqlite3
 from datetime import datetime
+
 def createFriendship(user_id, friend_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO friendship (user, friend, friends_at)
+        INSERT INTO friendships (user_id, friend_id, created_at)
         VALUES (?, ?, ?)
     """, (user_id, friend_id, datetime.now()))
     conn.commit()
     conn.close()
 
-def getFriendsList(user_id):
+def getFriends(user_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-    SELECT * FROM friendship
+    SELECT * FROM friendships
     WHERE user = ?
     """,(user_id,))
     returnedObjects = []

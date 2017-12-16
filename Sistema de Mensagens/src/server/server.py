@@ -5,10 +5,10 @@ sys.path.append('..')
 import logging
 from models.user import User
 from models.group import Group
-from validation import loginValidation
+from validation import emailValidation
 
-import controllers.friends as Friend
-import controllers.users as User
+import controllers.friends as FriendController
+import controllers.users as UserController
 
 
 userList = { }
@@ -16,6 +16,7 @@ groupList = { }
 
 class ServerService(rpyc.Service):
     userConected = None
+    user = None
     def on_connect(self):
         # code that runs when a connection is created
         # (to init the serivce, if needed)
@@ -29,43 +30,31 @@ class ServerService(rpyc.Service):
     # CREATORS
     #
     @classmethod # this is an exposed method
-    def exposed_createUser(cls, loginName):
+    def exposed_createUser(cls, name, email):
         # Validate
-        validation = loginValidation(loginName)
+        validation = emailValidation(email)
         if(len(validation) > 0):
             logging.debug(validation)
             return validation
         # Persiste
-        newUser = User(loginName)
-        newUser.save()
+        cls.user = User(_id=None, name=name, email=email)
+        cls.user.save()
         # Return
         data = {
             'type': '@USER/DATA',
-            'payload': newUser
+            'payload': {
+                'id': cls.user.getId(),
+                'name': cls.user.getName(),
+                'email': cls.user.getemail()
+                }
         }
         logging.debug(data)
         return data
     @classmethod # this is an exposed method
     def exposed_createFriendship(cls, user_id, friend_id):
-        data = Friend.createFriendship(user_id, friend_id)
-        return data
+        pass
     @classmethod # this is an exposed method
     def exposed_createGroup(cls, group):
-        # Validate
-        validation = loginValidation(group)
-        if(len(validation) > 0):
-            logging.debug(validation)
-            return validation
-        # Persiste
-        newGroup = User(group)
-        userList.setdefault(newGroup.getId(), newGroup)
-        # Return
-        data = {
-            'type': '@USER/DATA',
-            'payload': newGroup
-        }
-        logging.debug(data)
-        return data
         pass
     #
     # REMOVERS
@@ -89,8 +78,17 @@ class ServerService(rpyc.Service):
     # FINDERS
     #
     @classmethod # this is an exposed method
-    def exposed_findUserByName(cls, name):
-        return {'type': '@USER/DATA', 'payload': 'payload'}
+    def exposed_findUserByEmail(cls, email):
+        user = UserController.findBy_email(email)
+        if (user == None):
+            return {
+                'type' : '@USER/NOTFOUND',
+                'payload': 'Usuario não encontrado'
+            }
+        return {
+            'type': '@USER/DATA', 
+            'payload': user
+        }
     @classmethod # this is an exposed method
     def exposed_findGroupByName(cls, name):
         pass
@@ -106,11 +104,23 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_allUsers(cls):
         logging.info('Retornando lista de usuarios')
-        return User.all()
+        return UserController.all()
     @classmethod # this is an exposed method
     def exposed_allGroupsList(cls):
         return userList
     @classmethod # this is an exposed method
-    def exposed_loginUser(cls, loginIdentifier):
-        user = User.login()
-        return user
+    def exposed_userLogin(cls, email):
+        cls.user = UserController.findBy_email(email)
+        if (cls.user == None):
+            return {
+                'type' : '@USER/NOTFOUND',
+                'payload': 'Usuario não encontrado'
+            }
+        return {
+            'type': '@USER/DATA', 
+            'payload': {
+                'id': cls.user.getId(),
+                'name': cls.user.getName(),
+                'email': cls.user.getemail()
+                }
+        }

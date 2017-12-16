@@ -1,9 +1,15 @@
 import logging
+import controllers.users as UserController
 
-def loginValidation(loginName):
-    if(len(loginName) <= 3):
+def emailValidation(email):
+    if(len(email) <= 3):
         return {
-            'type': 'VALIDATION/TOOSMALL', 
+            'type': 'VALIDATION/ERROR', 
             'payload': 'Nome de usuario menor do que o requisitado! O minimo requisitado eh 3.'
+        }
+    if(UserController.findBy_email(email) != None):
+        return {
+            'type': 'VALIDATION/ERROR',
+            'payload': 'Usuario ja cadastrado!'
         }
     return ''

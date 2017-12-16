@@ -10,9 +10,8 @@ cursor = conn.cursor()
 print('Users')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
-        id CHAR(32) NOT NULL PRIMARY KEY,
+        email CHAR(64) NOT NULL PRIMARY KEY,
         name VARCHAR(32) NOT NULL,
-        email VARCHAR(32) NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
 );
@@ -21,12 +20,12 @@ print('...Ok!')
 print('Friendship')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS friendships (
-        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        user_id CHAR(32) NOT NULL,
-        friend_id CHAR(32) NOT NULL,
+        user_id CHAR(64) NOT NULL ,
+        friend_id CHAR(64) NOT NULL,
         created_at DATE NOT NULL,
         FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(friend_id) REFERENCES users(id)
+        FOREIGN KEY(friend_id) REFERENCES users(id),
+        PRIMARY KEY (user_id, friend_id)
 );
 """)
 print('...Ok!')

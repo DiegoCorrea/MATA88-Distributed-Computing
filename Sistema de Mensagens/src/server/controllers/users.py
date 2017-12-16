@@ -23,7 +23,7 @@ def findBy_email(email):
     """, (email,))
     returnedObject = cursor.fetchone()
     if(returnedObject):
-        user = User(email=returnedObject[2], _id=returnedObject[0], name=returnedObject[1])
+        user = User(email=returnedObject[0], name=returnedObject[1])
         conn.close()
         return user
     return None

@@ -37,22 +37,43 @@ class ServerService(rpyc.Service):
             logging.debug(validation)
             return validation
         # Persiste
-        cls.user = User(_id=None, name=name, email=email)
+        cls.user = User(name=name, email=email)
         cls.user.save()
         # Return
         data = {
             'type': '@USER/DATA',
             'payload': {
-                'id': cls.user.getId(),
                 'name': cls.user.getName(),
                 'email': cls.user.getemail()
-                }
+            }
         }
         logging.debug(data)
         return data
     @classmethod # this is an exposed method
-    def exposed_createFriendship(cls, user_id, friend_id):
-        pass
+    def exposed_createFriendship(cls, friend_email):
+        friend = UserController.findBy_email(friend_email)
+        if friend is None:
+            return {
+                'type': '@USER/NOTFOUND',
+                'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
+            }
+        FriendController.createFriendship(cls.user.getemail(), friend_email)
+        return {
+            'type:': '@USER/DATA',
+            'payload': FriendController.all(cls.user.getemail())
+        }
+    @classmethod # this is an exposed method
+    def exposed_allFriends(cls):
+        friendList = FriendController.all(cls.user.getemail())
+        if len(friendList) is 0:
+            return {
+                'type': '@USER/ZERO',
+                'payload': 'Sem amigos na lista!'
+            }
+        return {
+            'type:': '@USER/DATA',
+            'payload': friendList
+        }
     @classmethod # this is an exposed method
     def exposed_createGroup(cls, group):
         pass
@@ -80,7 +101,7 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_findUserByEmail(cls, email):
         user = UserController.findBy_email(email)
-        if (user == None):
+        if user is None:
             return {
                 'type' : '@USER/NOTFOUND',
                 'payload': 'Usuario não encontrado'
@@ -111,7 +132,7 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_userLogin(cls, email):
         cls.user = UserController.findBy_email(email)
-        if (cls.user == None):
+        if cls.user is None:
             return {
                 'type' : '@USER/NOTFOUND',
                 'payload': 'Usuario não encontrado'
@@ -119,7 +140,6 @@ class ServerService(rpyc.Service):
         return {
             'type': '@USER/DATA', 
             'payload': {
-                'id': cls.user.getId(),
                 'name': cls.user.getName(),
                 'email': cls.user.getemail()
                 }

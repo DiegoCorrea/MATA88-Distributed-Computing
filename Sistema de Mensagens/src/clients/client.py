@@ -6,18 +6,57 @@ SERVER_IP = 'localhost'
 SERVER_PORT = 27000
 conn = rpyc.connect(SERVER_IP, SERVER_PORT)
 USER = {}
-
+FRIENDSHIPS = []
+GROUPS = {}
 ######################################################
-def addFriend():
-    pass
+def remoteAddFriend(email):
+    data = conn.root.createFriendship(email=email)
+    return data
+def addFriend(email):
+    data = remoteAddFriend(email=email)
+    if data['type'] == '@USER/NOTFOUND':
+        print 'ATENÇÃO: ', data['payload']
+        return None
+    return data['payload']
+def remoteGetFriends():
+    data = conn.root.exposed_allFriends()
+    return data
 def getFriends():
-    pass
+    data = remoteGetFriends()
+    if data['type'] == '@USER/NOTFOUND':
+        print 'ATENÇÃO: ', data['payload']
+        return None
+    if data['type'] == '@USER/ZERO':
+        print 'ATENÇÃO: ', data['payload']
+        return []
+    return data['payload']
 def findFriend():
     pass
 def sendMessege():
     pass
 def friendScreen():
-    pass
+    menuChoice = 10
+    while menuChoice != 0:
+        print('1 - Add Friend')
+        print('2 - Get Friend List')
+        print('3 - Open Chat')
+        print('0 - Sair')
+        menuChoice = int(input("Escolha: "))
+        if menuChoice is 1:
+            email = None
+            while email is None:
+                email = raw_input("Email: ")
+                if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
+                    print 'ATENÇÃO -> Por Favor digite um e-mail Valido!'
+                    email = None
+                else:
+                    FRIENDSHIPS = addFriend(email)
+        elif menuChoice is 2:
+            FRIENDSHIPS = getFriends()
+        elif menuChoice is 3:
+            pass
+        else:
+            pass
 
 ######################################################
 def userScreen():
@@ -35,31 +74,32 @@ def userScreen():
             pass
 ###################################################
 def remoteLogOnSystem(email):
-    user = conn.root.userLogin(email)
+    user = conn.root.userLogin(email=email)
     return user
 def logIn(email):
-    if(re.match(r"[^@]+@[^@]+\.[^@]+", email) == ''):
+    if(re.match(r"[^@]+@[^@]+\.[^@]+", email) == None):
         print('ATENÇÃO -> Por Favor digite um e-mail Valido!')
         return None
-    user = remoteLogOnSystem(email)
+    user = remoteLogOnSystem(email=email)
     if(user['type'] == '@USER/NOTFOUND'):
         print('ATENÇÃO -> ', user['payload'])
+        return None
     return user['payload']
 def remoteCreateUser(email, name):
-    userData = conn.root.createUser(email, name)
-    return userData
+    data = conn.root.createUser(email=email, name=name)
+    return data
 def createAccount(email, name):
-    if(re.match(r"[^@]+@[^@]+\.[^@]+", email) == ''):
+    if(re.match(r"[^@]+@[^@]+\.[^@]+", email) == None):
         print('ATENÇÃO -> Por Favor digite um e-mail Valido!')
         return None
     if(len(name) < 3):
         print('ATENÇÃO -> Um nome maior que 3 letras é necessario')
         return None
-    userData = remoteCreateUser(email, name)
-    if (userData['type'] == 'VALIDATION/ERROR'):
-        print('ATENÇÃO: ', userData['payload'])
+    data = remoteCreateUser(email=email, name=name)
+    if (data['type'] == 'VALIDATION/ERROR'):
+        print('ATENÇÃO: ', data['payload'])
         return None
-    return userData['payload']
+    return data['payload']
 def loginScreen():
     print('##################')
     print('# 1 - Logar')
@@ -79,7 +119,7 @@ def loginScreen():
             print('Cadastrar nova conta')
             email = raw_input("Email: ")
             name = raw_input("Nome: ")
-            newUser = createAccount(name, email)
+            newUser = createAccount(email=email, name=name)
         return newUser
     else:
         os.system('cls||clear')

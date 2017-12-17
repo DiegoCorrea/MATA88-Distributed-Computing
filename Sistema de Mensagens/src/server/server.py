@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import rpyc
 import sys
+import operator
 sys.path.append('..')
 import logging
 from models.user import User
@@ -81,12 +82,14 @@ class ServerService(rpyc.Service):
         }
     @classmethod # this is an exposed method
     def exposed_chatHistory(cls, friend_id):
-        chatHistory = ChatController.getChatHistory(cls.user.getID(), friend_id)
-        if len(chatHistory) is 0:
-            return {
-                'type': '@CHAT/ZERO',
-                'payload': 'Sem conversas no chat!'
-            }
+        chatHistory = {}
+        for chat_message in ChatController.getChatHistory(cls.user.getID(), friend_id):
+            chatHistory.setdefault(chat_message[4], {
+                'chat_id': chat_message[1],
+                'sender_id': chat_message[2],
+                'message': chat_message[3],
+                'created_at': chat_message[4]
+            })
         return {
             'type': '@CHAT/DATA',
             'payload': chatHistory
@@ -118,18 +121,7 @@ class ServerService(rpyc.Service):
                     'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
                 }
         ChatController.setChatMessage(chat_id=chat[0], sender_id=cls.user.getID(), message=message)
-        chatHistory = {}
-        for chat_message in ChatController.getChatHistory(cls.user.getID(), friend_id):
-            chatHistory.setdefault(chat_message[4], {
-                'chat_id': chat_message[1],
-                'sender_id': chat_message[2],
-                'message': chat_message[3],
-                'created_at': chat_message[4]
-            })
-        return {
-            'type': '@CHAT/DATA',
-            'payload': chatHistory
-        }
+        return cls.exposed_chatHistory(friend_id)
     @classmethod # this is an exposed method
     def exposed_sendMessageGroup(cls, id, message):
         pass

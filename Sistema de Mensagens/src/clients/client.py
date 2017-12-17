@@ -6,39 +6,41 @@ SERVER_IP = 'localhost'
 SERVER_PORT = 27000
 conn = rpyc.connect(SERVER_IP, SERVER_PORT)
 USER = {}
-FRIENDSHIPS = {}
+CHATS = {}
 GROUPS = {}
 ################################################################################
+def printChat(chatHistory):
+    os.system('cls||clear')
+    print '##################################################'
+    print 'Chat com '
+    print '##################################################'
+    for chat_message in chatHistory:
+        print 'De: ', chatHistory[chat_message]['sender_id']
+        print chatHistory[chat_message]['message']
+    print '##################################################'
 def remoteSendMessage(friend_id, message):
     data = conn.root.sendMessageUser(friend_id, message)
     return data
 def sendMessege(friend_id, message):
     data = remoteSendMessage(friend_id, message)
-    print '##################################################'
-    print 'Novo Historico de conversa'
-    print '##################################################'
-    print data['payload']
-    print '##################################################'
-    for chat_message in data['payload']:
-        print 'De: ', data['payload'][chat_message]
-    print '##################################################'
     return data['payload']
 def remoteGetMessages(friend_id):
     data = conn.root.chatHistory(friend_id)
     return data
 def getMessages(email):
-    return remoteGetMessages(email)
-def chatScreen(email):
-    print list(FRIENDSHIPS)
-    if email not in list(FRIENDSHIPS):
-        print 'ATENÇÃO: Não existe amizade entre as partes!'
-        return None
-    data = getMessages(email)
+    data = remoteGetMessages(email)
     if data['type'] == '@CHAT/ZERO':
         print 'ATENÇÃO: ', data['payload']
-    print '\n'
+    return data['payload']
+def chatScreen(email):
+    global CHATS
+    print CHATS
+    if email not in CHATS:
+        print 'ATENÇÃO: Não existe amizade entre as partes!'
+        return None
+    printChat(getMessages(email))
     text = raw_input("Digite o texto de envio: ")
-    sendMessege(email, text)
+    printChat(sendMessege(email, text))
 ################################################################################
 ################################################################################
 def remoteAddFriend(friend_id):
@@ -65,11 +67,11 @@ def getFriends():
     print data['payload']
     print '---------------------------------------'
     return data['payload']
-def findFriend(email):
-    pass
 def friendScreen():
     menuChoice = 10
+    global CHATS
     while menuChoice != 0:
+        print '---', CHATS
         print('1 - Add Friend')
         print('2 - Get Friend List')
         print('3 - Open Chat')
@@ -83,9 +85,9 @@ def friendScreen():
                     print 'ATENÇÃO -> Por Favor digite um e-mail Valido!'
                     email = None
                 else:
-                    FRIENDSHIPS = addFriend(email)
+                    CHATS = addFriend(email)
         elif menuChoice is 2:
-            FRIENDSHIPS = getFriends()
+            CHATS = getFriends()
         elif menuChoice is 3:
             email = None
             while email is None:
@@ -94,6 +96,7 @@ def friendScreen():
                     print 'ATENÇÃO -> Por Favor digite um e-mail Valido!'
                     email = None
                 else:
+                    print '---', CHATS
                     chatScreen(email)
         else:
             pass
@@ -168,11 +171,13 @@ def loginScreen():
         exit()
 
 if __name__ == "__main__":
+    global USER
+    global CHATS
     os.system('cls||clear')
     USER = loginScreen()
     print('Usuario: ', USER)
     if(USER):
-        FRIENDSHIPS = getFriends()
+        CHATS = getFriends()
         os.system('cls||clear')
         userScreen()
     conn.close()

@@ -1,6 +1,7 @@
 import sqlite3
 import uuid
 from datetime import datetime
+from time import gmtime, strftime
 
 def createChat(user_id, friend_id):
     conn = sqlite3.connect('./db/whatsApp.db')
@@ -8,7 +9,7 @@ def createChat(user_id, friend_id):
     cursor.execute("""
         INSERT INTO chats (id, user_id, friend_id, created_at)
         VALUES (?, ?, ?, ?)
-    """, (str(uuid.uuid4()), user_id, friend_id, datetime.now()))
+    """, (str(uuid.uuid4()), user_id, friend_id, strftime("%Y-%m-%d %H:%M:%S", gmtime())))
     conn.commit()
     conn.close()
 
@@ -49,7 +50,7 @@ def getChatWith(user_id, friend_id):
     conn.close()
     return data
 
-def getChatHistory(user_id, friend_id):
+def getChatHistory(user_id, friend_id, limit=20):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
@@ -63,8 +64,8 @@ def getChatHistory(user_id, friend_id):
     cursor.execute("""
         SELECT * FROM chat_messages
         WHERE chat_id = ?
-        ORDER BY created_at ASC;
-    """, (chat_id[0],))
+        ORDER BY date(created_at) DESC Limit ?;
+    """, (chat_id[0], limit))
     returnedObjects = []
     for line in cursor.fetchall():
         returnedObjects.append(line)
@@ -85,7 +86,7 @@ def getChat(chat_id):
     cursor.execute("""
         SELECT * FROM chat_messages
         WHERE chat_id = ?
-        ORDER BY created_at ASC;
+        ORDER BY created_at DESC;
     """, (chat_id[0],))
     returnedObjects = []
     for line in cursor.fetchall():
@@ -99,6 +100,6 @@ def setChatMessage(chat_id, sender_id, message):
     cursor.execute("""
         INSERT INTO chat_messages (chat_id, sender_id, message, created_at)
         VALUES (?, ?, ?, ?)
-    """, (chat_id, sender_id, message, datetime.now()))
+    """, (chat_id, sender_id, message, str(strftime("%Y-%m-%d %H:%M:%S", gmtime()))))
     conn.commit()
     conn.close()

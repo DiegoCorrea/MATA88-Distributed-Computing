@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
 );
 """)
 print('...Ok!')
-print('Friendship')
+print('Chat')
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS friendships (
+CREATE TABLE IF NOT EXISTS chats (
         id CHAR(64) NOT NULL PRIMARY KEY,
         user_id CHAR(64) NOT NULL ,
         friend_id CHAR(64) NOT NULL,
@@ -29,14 +29,14 @@ CREATE TABLE IF NOT EXISTS friendships (
 );
 """)
 print('...Ok!')
-print('User Message')
+print('Chat Message')
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS user_messages (
+CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         chat_id CHAR(64) NOT NULL,
         sender_id CHAR(64) NOT NULL,
         message TEXT NOT NULL,
-        message_time TEXT NOT NULL,
+        created_at TEXT NOT NULL,
         FOREIGN KEY(sender_id) REFERENCES users(email),
         FOREIGN KEY(chat_id) REFERENCES friendships(id)
 );

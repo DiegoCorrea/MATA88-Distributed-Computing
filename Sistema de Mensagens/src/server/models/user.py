@@ -12,6 +12,8 @@ class User:
         self.email = email
     def getName(self):
         return self.name
+    def getID(self):
+        return self.email
     def getemail(self):
         return self.email
     def save(self):

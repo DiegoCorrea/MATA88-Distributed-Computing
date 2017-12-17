@@ -7,7 +7,7 @@ from models.user import User
 from models.group import Group
 from validation import emailValidation
 
-import controllers.friends as FriendController
+import controllers.chats as ChatController
 import controllers.users as UserController
 
 
@@ -50,21 +50,26 @@ class ServerService(rpyc.Service):
         logging.debug(data)
         return data
     @classmethod # this is an exposed method
-    def exposed_createFriendship(cls, friend_email):
-        friend = UserController.findBy_email(friend_email)
+    def exposed_createFriendship(cls, friend_id):
+        friend = UserController.findBy_email(friend_id)
         if friend is None:
             return {
                 'type': '@USER/NOTFOUND',
                 'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
             }
-        FriendController.createFriendship(cls.user.getemail(), friend_email)
+        ChatController.createFriendship(user_id=cls.user.getID(), friend_id=friend_id)
+        friendList = {}
+        for friend in ChatController.all(cls.user.getID()):
+            friendList.setdefault(friend[0], {'friendOf': friend[0], 'created_at': friend[1]})
         return {
             'type': '@USER/DATA',
-            'payload': FriendController.all(cls.user.getemail())
+            'payload': friendList
         }
     @classmethod # this is an exposed method
     def exposed_allFriends(cls):
-        friendList = FriendController.all(cls.user.getemail())
+        friendList = {}
+        for friend in ChatController.all(user_id=cls.user.getID()):
+            friendList.setdefault(friend[0], {'friendOf': friend[0], 'created_at': friend[1]})
         if len(friendList) is 0:
             return {
                 'type': '@USER/ZERO',
@@ -73,6 +78,18 @@ class ServerService(rpyc.Service):
         return {
             'type': '@USER/DATA',
             'payload': friendList
+        }
+    @classmethod # this is an exposed method
+    def exposed_chatHistory(cls, friend_id):
+        chatHistory = ChatController.getChatHistory(cls.user.getID(), friend_id)
+        if len(chatHistory) is 0:
+            return {
+                'type': '@CHAT/ZERO',
+                'payload': 'Sem conversas no chat!'
+            }
+        return {
+            'type': '@CHAT/DATA',
+            'payload': chatHistory
         }
     @classmethod # this is an exposed method
     def exposed_createGroup(cls, group):
@@ -90,8 +107,28 @@ class ServerService(rpyc.Service):
     # SENDERS
     #
     @classmethod # this is an exposed method
-    def exposed_sendMessageUser(cls, id, message):
-        pass
+    def exposed_sendMessageUser(cls, friend_id, message):
+        chat = ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)
+        if len(chat) is 0:
+            chat = ChatController.createFriendship(user_id=cls.user.getID(), friend_id=friend_id)
+            if len(chat) is 0:
+                return {
+                    'type': '@USER/NOTFOUND',
+                    'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
+                }
+        ChatController.setChatMessage(chat_id=chat[1], sender_id=cls.user.getID(), message=message)
+        chatHistory = { }
+        for chat_message in ChatController.getChatHistory(cls.user.getID(), friend_id):
+            chatHistory.setdefault(chat_message[4],{
+                'chat_id': chat_message[1],
+                'sender_id': chat_message[2],
+                'message': chat_message[3],
+                'created_at': chat_message[4]
+            })
+        return {
+            'type': '@CHAT/DATA',
+            'payload': chatHistory
+        }
     @classmethod # this is an exposed method
     def exposed_sendMessageGroup(cls, id, message):
         pass
@@ -130,8 +167,8 @@ class ServerService(rpyc.Service):
     def exposed_allGroupsList(cls):
         return userList
     @classmethod # this is an exposed method
-    def exposed_userLogin(cls, email):
-        cls.user = UserController.findBy_email(email)
+    def exposed_userLogin(cls, user_id):
+        cls.user = UserController.findBy_email(user_id)
         if cls.user is None:
             return {
                 'type': '@USER/NOTFOUND',

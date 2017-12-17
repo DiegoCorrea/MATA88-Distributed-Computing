@@ -50,34 +50,34 @@ class ServerService(rpyc.Service):
         logging.debug(data)
         return data
     @classmethod # this is an exposed method
-    def exposed_createFriendship(cls, friend_id):
-        friend = UserController.findBy_email(friend_id)
+    def exposed_createChat(cls, friend_id):
+        friend = UserController.findBy_id(friend_id)
         if friend is None:
             return {
                 'type': '@USER/NOTFOUND',
                 'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
             }
-        ChatController.createFriendship(user_id=cls.user.getID(), friend_id=friend_id)
-        friendList = {}
-        for friend in ChatController.all(cls.user.getID()):
-            friendList.setdefault(friend[0], {'friendOf': friend[0], 'created_at': friend[1]})
+        ChatController.createChat(user_id=cls.user.getID(), friend_id=friend_id)
+        chatList = {}
+        for friend in ChatController.all(user_id=cls.user.getID()):
+            chatList.setdefault(friend[0], {'friendOf': friend[0], 'created_at': friend[1]})
         return {
             'type': '@USER/DATA',
-            'payload': friendList
+            'payload': chatList
         }
     @classmethod # this is an exposed method
     def exposed_allFriends(cls):
-        friendList = {}
+        chatList = {}
         for friend in ChatController.all(user_id=cls.user.getID()):
-            friendList.setdefault(friend[0], {'friendOf': friend[0], 'created_at': friend[1]})
-        if len(friendList) is 0:
+            chatList.setdefault(friend[0], {'friendOf': friend[0], 'created_at': friend[1]})
+        if len(chatList) is 0:
             return {
                 'type': '@USER/ZERO',
                 'payload': 'Sem amigos na lista!'
             }
         return {
             'type': '@USER/DATA',
-            'payload': friendList
+            'payload': chatList
         }
     @classmethod # this is an exposed method
     def exposed_chatHistory(cls, friend_id):
@@ -110,16 +110,17 @@ class ServerService(rpyc.Service):
     def exposed_sendMessageUser(cls, friend_id, message):
         chat = ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)
         if len(chat) is 0:
-            chat = ChatController.createFriendship(user_id=cls.user.getID(), friend_id=friend_id)
+            ChatController.createChat(user_id=cls.user.getID(), friend_id=friend_id)
+            chat = ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)
             if len(chat) is 0:
                 return {
                     'type': '@USER/NOTFOUND',
                     'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
                 }
-        ChatController.setChatMessage(chat_id=chat[1], sender_id=cls.user.getID(), message=message)
-        chatHistory = { }
+        ChatController.setChatMessage(chat_id=chat[0], sender_id=cls.user.getID(), message=message)
+        chatHistory = {}
         for chat_message in ChatController.getChatHistory(cls.user.getID(), friend_id):
-            chatHistory.setdefault(chat_message[4],{
+            chatHistory.setdefault(chat_message[4], {
                 'chat_id': chat_message[1],
                 'sender_id': chat_message[2],
                 'message': chat_message[3],

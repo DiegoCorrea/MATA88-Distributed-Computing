@@ -2,7 +2,7 @@ import sqlite3
 import uuid
 from datetime import datetime
 
-def createFriendship(user_id, friend_id):
+def createChat(user_id, friend_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
@@ -11,19 +11,6 @@ def createFriendship(user_id, friend_id):
     """, (str(uuid.uuid4()), user_id, friend_id, datetime.now()))
     conn.commit()
     conn.close()
-
-def getFriends(user_id):
-    conn = sqlite3.connect('./db/whatsApp.db')
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT friend_id, created_at FROM chats
-        WHERE user_id = ?
-    """, user_id)
-    returnedObjects = []
-    for linha in cursor.fetchall():
-        returnedObjects.append(linha)
-    conn.close()
-    return returnedObjects
 
 def all(user_id):
     conn = sqlite3.connect('./db/whatsApp.db')
@@ -60,8 +47,6 @@ def getChatWith(user_id, friend_id):
     """, (user_id, friend_id,))
     data = cursor.fetchone()
     conn.close()
-    if data is None:
-        return []
     return data
 
 def getChatHistory(user_id, friend_id):
@@ -74,7 +59,29 @@ def getChatHistory(user_id, friend_id):
     chat_id = cursor.fetchone()
     if chat_id is None:
         conn.close()
-        return []
+        return None
+    cursor.execute("""
+        SELECT * FROM chat_messages
+        WHERE chat_id = ?
+        ORDER BY created_at ASC;
+    """, (chat_id[0],))
+    returnedObjects = []
+    for line in cursor.fetchall():
+        returnedObjects.append(line)
+    conn.close()
+    return returnedObjects
+
+def getChat(chat_id):
+    conn = sqlite3.connect('./db/whatsApp.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id FROM chats
+        WHERE user_id = ? AND friend_id = ?;
+    """, (user_id, friend_id,))
+    chat_id = cursor.fetchone()
+    if chat_id is None:
+        conn.close()
+        return None
     cursor.execute("""
         SELECT * FROM chat_messages
         WHERE chat_id = ?

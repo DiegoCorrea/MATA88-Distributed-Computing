@@ -20,7 +20,7 @@ def sendMessege(friend_id, message):
     print data['payload']
     print '##################################################'
     for chat_message in data['payload']:
-        print 'De: ', chat_message['sender_id'], ' -> ', chat_message['message']
+        print 'De: ', data['payload'][chat_message]
     print '##################################################'
     return data['payload']
 def remoteGetMessages(friend_id):
@@ -41,11 +41,11 @@ def chatScreen(email):
     sendMessege(email, text)
 ################################################################################
 ################################################################################
-def remoteAddFriend(email):
-    data = conn.root.createFriendship(friend_id=email)
+def remoteAddFriend(friend_id):
+    data = conn.root.exposed_createChat(friend_id=friend_id)
     return data
 def addFriend(email):
-    data = remoteAddFriend(email=email)
+    data = remoteAddFriend(friend_id=email)
     if data['type'] == '@USER/NOTFOUND':
         print 'ATENÇÃO: ', data['payload']
         return None

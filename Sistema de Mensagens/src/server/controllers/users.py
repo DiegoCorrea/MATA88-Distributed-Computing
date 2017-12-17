@@ -22,8 +22,21 @@ def findBy_email(email):
     SELECT * FROM users WHERE email=?;
     """, (email,))
     returnedObject = cursor.fetchone()
-    if(returnedObject):
-        user = User(email=returnedObject[0], name=returnedObject[1])
-        conn.close()
-        return user
-    return None
+    conn.close()
+    if returnedObject is None:
+        return None
+    user = User(email=returnedObject[0], name=returnedObject[1])
+    return user
+
+def findBy_id(user_id):
+    conn = sqlite3.connect('./db/whatsApp.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM users WHERE email=?;
+    """, (user_id,))
+    returnedObject = cursor.fetchone()
+    conn.close()
+    if returnedObject is None:
+        return None
+    user = User(email=returnedObject[0], name=returnedObject[1])
+    return user

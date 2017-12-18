@@ -58,41 +58,50 @@ class ServerService(rpyc.Service):
                 'type': '@USER/NOTFOUND',
                 'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
             }
-        ChatController.createChat(user_id=cls.user.getID(), friend_id=friend_id)
-        chatList = {}
-        for friend in ChatController.all(user_id=cls.user.getID()):
-            chatList.setdefault(friend[0], {'friendOf': friend[0], 'created_at': friend[1]})
-        return {
-            'type': '@USER/DATA',
-            'payload': chatList
-        }
+        if len(ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)) == 0:
+            ChatController.createChat(user_id=cls.user.getID(), friend_id=friend_id)
+        return cls.exposed_allChats()
     @classmethod # this is an exposed method
-    def exposed_allFriends(cls):
+    def exposed_allChats(cls):
         chatList = {}
-        for friend in ChatController.all(user_id=cls.user.getID()):
-            chatList.setdefault(friend[0], {'friendOf': friend[0], 'created_at': friend[1]})
-        if len(chatList) is 0:
+        for chat in ChatController.allUserChat(user_id=cls.user.getID()):
+            if chat[1] == cls.user.getID():
+                chatList.setdefault(chat[2], {'chatWith': chat[2], 'created_at': chat[3]})
+            else:
+                chatList.setdefault(chat[1], {'chatWith': chat[1], 'created_at': chat[3]})
+        if len(chatList) == 0:
             return {
-                'type': '@USER/ZERO',
-                'payload': 'Sem amigos na lista!'
+                'type': '@CHAT/ZERO',
+                'payload': { }
             }
         return {
-            'type': '@USER/DATA',
+            'type': '@CHAT/DATA',
             'payload': chatList
         }
     @classmethod # this is an exposed method
-    def exposed_chatHistory(cls, friend_id):
-        chatHistory = {}
-        for chat_message in ChatController.getChatHistory(cls.user.getID(), friend_id):
-            chatHistory.setdefault(chat_message[4], {
+    def exposed_chatMessageHistory(cls, friend_id):
+        chatMessageHistory = {}
+        chat = ChatController.getChatWith(cls.user.getID(), friend_id)
+        if len(chat) == 0:
+            return {
+                'type': '@CHAT/NOTFOUND',
+                'payload': { }
+            }
+        for chat_message in ChatController.getChatMessages(chat[0]):
+            chatMessageHistory.setdefault(chat_message[4], {
                 'chat_id': chat_message[1],
                 'sender_id': chat_message[2],
                 'message': chat_message[3],
                 'created_at': chat_message[4]
             })
+        if len(chatMessageHistory) == 0:
+            return {
+                'type': '@CHAT/ZERO',
+                'payload': { }
+            }
         return {
             'type': '@CHAT/DATA',
-            'payload': chatHistory
+            'payload': chatMessageHistory
         }
     @classmethod # this is an exposed method
     def exposed_createGroup(cls, group):
@@ -112,16 +121,16 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_sendMessageUser(cls, friend_id, message):
         chat = ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)
-        if len(chat) is 0:
+        if len(chat) == 0:
             ChatController.createChat(user_id=cls.user.getID(), friend_id=friend_id)
             chat = ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)
-            if len(chat) is 0:
+            if len(chat) == 0:
                 return {
                     'type': '@USER/NOTFOUND',
                     'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
                 }
         ChatController.setChatMessage(chat_id=chat[0], sender_id=cls.user.getID(), message=message)
-        return cls.exposed_chatHistory(friend_id)
+        return cls.exposed_chatMessageHistory(friend_id)
     @classmethod # this is an exposed method
     def exposed_sendMessageGroup(cls, id, message):
         pass
@@ -149,16 +158,6 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_findGroupById(cls, id):
         pass
-    #
-    # ALL
-    #
-    @classmethod # this is an exposed method
-    def exposed_allUsers(cls):
-        logging.info('Retornando lista de usuarios')
-        return UserController.all()
-    @classmethod # this is an exposed method
-    def exposed_allGroupsList(cls):
-        return userList
     @classmethod # this is an exposed method
     def exposed_userLogin(cls, user_id):
         cls.user = UserController.findBy_email(user_id)

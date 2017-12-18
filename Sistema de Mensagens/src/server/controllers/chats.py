@@ -13,86 +13,51 @@ def createChat(user_id, friend_id):
     conn.commit()
     conn.close()
 
-def all(user_id):
+def allUserChat(user_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT friend_id, created_at FROM chats
-        WHERE user_id = ?;
-    """, (user_id,))
-    returnedObjects = []
-    for linha in cursor.fetchall():
-        returnedObjects.append(linha)
+        SELECT id, user_id, friend_id, created_at FROM chats
+        WHERE user_id = ? OR friend_id = ?;
+    """, (user_id, user_id,))
+    itens = cursor.fetchall()
     conn.close()
-    return returnedObjects
-
-def getFriend(user_id, friend_id):
-    conn = sqlite3.connect('./db/whatsApp.db')
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, friend_id, created_at FROM chats
-        WHERE user_id = ? AND friend_id = ?;
-    """, (user_id, friend_id,))
-    returnedObjects = []
-    for linha in cursor.fetchall():
-        returnedObjects.append(linha)
-    conn.close()
-    return returnedObjects
+    if itens is None:
+        return []
+    data = []
+    for linha in itens:
+        data.append(linha)
+    return data
 
 def getChatWith(user_id, friend_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, friend_id, created_at FROM chats
-        WHERE user_id = ? AND friend_id = ?;
-    """, (user_id, friend_id,))
+        WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?);
+    """, (user_id, friend_id, friend_id, user_id,))
     data = cursor.fetchone()
     conn.close()
+    if data is None:
+        return []
     return data
 
-def getChatHistory(user_id, friend_id, limit=20):
+def getChatMessages(chat_id, limit=20):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id FROM chats
-        WHERE user_id = ? AND friend_id = ?;
-    """, (user_id, friend_id,))
-    chat_id = cursor.fetchone()
-    if chat_id is None:
-        conn.close()
-        return None
     cursor.execute("""
         SELECT * FROM chat_messages
         WHERE chat_id = ?
         ORDER BY date(created_at) DESC Limit ?;
-    """, (chat_id[0], limit))
-    returnedObjects = []
-    for line in cursor.fetchall():
-        returnedObjects.append(line)
+    """, (chat_id, limit))
+    itens = cursor.fetchall()
     conn.close()
-    return returnedObjects
-
-def getChat(chat_id):
-    conn = sqlite3.connect('./db/whatsApp.db')
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id FROM chats
-        WHERE user_id = ? AND friend_id = ?;
-    """, (user_id, friend_id,))
-    chat_id = cursor.fetchone()
-    if chat_id is None:
-        conn.close()
-        return None
-    cursor.execute("""
-        SELECT * FROM chat_messages
-        WHERE chat_id = ?
-        ORDER BY created_at DESC;
-    """, (chat_id[0],))
-    returnedObjects = []
-    for line in cursor.fetchall():
-        returnedObjects.append(line)
-    conn.close()
-    return returnedObjects
+    if itens is None:
+        return []
+    data = []
+    for linha in itens:
+        data.append(linha)
+    return data
 
 def setChatMessage(chat_id, sender_id, message):
     conn = sqlite3.connect('./db/whatsApp.db')

@@ -29,7 +29,7 @@ def printScreenHeader():
 ################################################################################
 ################################################################################
 def remoteAddFriend(friend_id):
-    data = conn.root.exposed_createChat(friend_id=friend_id)
+    data = conn.root.exposed_createChat(user_id=USER['email'], friend_id=friend_id)
     return data
 def addFriend(email):
     data = remoteAddFriend(friend_id=email)
@@ -68,13 +68,13 @@ def printChat(chatHistory):
         print chatHistory[chat_message]['message']
     print '##################################################'
 def remoteSendMessage(friend_id, message):
-    data = conn.root.sendMessageUser(friend_id, message)
+    data = conn.root.sendMessageUser(user_id=USER['email'], friend_id=friend_id, message=message)
     return data
 def sendMessege(friend_id, message):
     data = remoteSendMessage(friend_id, message)
     return data['payload']
 def remoteGetMessages(friend_id):
-    data = conn.root.chatMessageHistory(friend_id)
+    data = conn.root.chatMessageHistory(user_id=USER['email'], friend_id=friend_id)
     return data
 def getMessages(email):
     data = remoteGetMessages(email)
@@ -95,7 +95,7 @@ def printChatList():
         print 'Chat With: ', CHATS[chat]['chatWith']
     print '##################################################'
 def remoteGetAllUserChats():
-    data = conn.root.allChats()
+    data = conn.root.allChats(user_id=USER['email'],)
     return data
 def getUserChats():
     data = remoteGetAllUserChats()

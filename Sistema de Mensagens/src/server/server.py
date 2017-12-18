@@ -16,8 +16,6 @@ userList = { }
 groupList = { }
 
 class ServerService(rpyc.Service):
-    userConected = None
-    user = None
     def on_connect(self):
         # code that runs when a connection is created
         # (to init the serivce, if needed)
@@ -38,34 +36,34 @@ class ServerService(rpyc.Service):
             logging.debug(validation)
             return validation
         # Persiste
-        cls.user = User(name=name, email=email)
-        cls.user.save()
+        user = User(name=name, email=email)
+        user.save()
         # Return
         data = {
             'type': '@USER/DATA',
             'payload': {
-                'name': cls.user.getName(),
-                'email': cls.user.getemail()
+                'name': user.getName(),
+                'email': user.getemail()
             }
         }
         logging.debug(data)
         return data
     @classmethod # this is an exposed method
-    def exposed_createChat(cls, friend_id):
+    def exposed_createChat(cls, user_id, friend_id):
         friend = UserController.findBy_id(friend_id)
         if friend is None:
             return {
                 'type': '@USER/NOTFOUND',
                 'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
             }
-        if len(ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)) == 0:
-            ChatController.createChat(user_id=cls.user.getID(), friend_id=friend_id)
-        return cls.exposed_allChats()
+        if len(ChatController.getChatWith(user_id=user_id, friend_id=friend_id)) == 0:
+            ChatController.createChat(user_id=user_id, friend_id=friend_id)
+        return cls.exposed_allChats(user_id)
     @classmethod # this is an exposed method
-    def exposed_allChats(cls):
+    def exposed_allChats(cls, user_id):
         chatList = {}
-        for chat in ChatController.allUserChat(user_id=cls.user.getID()):
-            if chat[1] == cls.user.getID():
+        for chat in ChatController.allUserChat(user_id=user_id):
+            if chat[1] == user_id:
                 chatList.setdefault(chat[2], {'chatWith': chat[2], 'created_at': chat[3]})
             else:
                 chatList.setdefault(chat[1], {'chatWith': chat[1], 'created_at': chat[3]})
@@ -79,9 +77,9 @@ class ServerService(rpyc.Service):
             'payload': chatList
         }
     @classmethod # this is an exposed method
-    def exposed_chatMessageHistory(cls, friend_id):
+    def exposed_chatMessageHistory(cls, user_id, friend_id):
         chatMessageHistory = {}
-        chat = ChatController.getChatWith(cls.user.getID(), friend_id)
+        chat = ChatController.getChatWith(user_id, friend_id)
         if len(chat) == 0:
             return {
                 'type': '@CHAT/NOTFOUND',
@@ -119,18 +117,18 @@ class ServerService(rpyc.Service):
     # SENDERS
     #
     @classmethod # this is an exposed method
-    def exposed_sendMessageUser(cls, friend_id, message):
-        chat = ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)
+    def exposed_sendMessageUser(cls, user_id, friend_id, message):
+        chat = ChatController.getChatWith(user_id=user_id, friend_id=friend_id)
         if len(chat) == 0:
-            ChatController.createChat(user_id=cls.user.getID(), friend_id=friend_id)
-            chat = ChatController.getChatWith(user_id=cls.user.getID(), friend_id=friend_id)
+            ChatController.createChat(user_id=user_id, friend_id=friend_id)
+            chat = ChatController.getChatWith(user_id=user_id, friend_id=friend_id)
             if len(chat) == 0:
                 return {
                     'type': '@USER/NOTFOUND',
                     'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
                 }
-        ChatController.setChatMessage(chat_id=chat[0], sender_id=cls.user.getID(), message=message)
-        return cls.exposed_chatMessageHistory(friend_id)
+        ChatController.setChatMessage(chat_id=chat[0], sender_id=user_id, message=message)
+        return cls.exposed_chatMessageHistory(user_id, friend_id)
     @classmethod # this is an exposed method
     def exposed_sendMessageGroup(cls, id, message):
         pass
@@ -160,8 +158,8 @@ class ServerService(rpyc.Service):
         pass
     @classmethod # this is an exposed method
     def exposed_userLogin(cls, user_id):
-        cls.user = UserController.findBy_email(user_id)
-        if cls.user is None:
+        user = UserController.findBy_email(user_id)
+        if user is None:
             return {
                 'type': '@USER/NOTFOUND',
                 'payload': 'Usuario não encontrado'
@@ -169,7 +167,7 @@ class ServerService(rpyc.Service):
         return {
             'type': '@USER/DATA',
             'payload': {
-                'name': cls.user.getName(),
-                'email': cls.user.getemail()
+                'name': user.getName(),
+                'email': user.getemail()
                 }
         }

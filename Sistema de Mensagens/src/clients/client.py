@@ -5,10 +5,16 @@ import re
 SERVER_IP = 'localhost'
 SERVER_PORT = 27000
 conn = rpyc.connect(SERVER_IP, SERVER_PORT)
-USER = { }
-FRIENDSHIP = { }
-CHATS = { }
-GROUPS = { }
+STORE = {
+    'user': { },
+    'friendships': { },
+    'chats': { },
+    'groups': { }
+}
+################################################################################
+################################################################################
+################################################################################
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -23,23 +29,23 @@ def waitEnter():
 def printScreenHeader():
     os.system('cls||clear')
     print '##################################################'
-    print 'Sessão: ( ', USER['name'], ' - ', USER['email'], ' )'
+    print 'Sessão: ( ', STORE['user']['name'], ' - ', STORE['user']['email'], ' )'
     print '##################################################'
 ################################################################################
 ################################################################################
 ################################################################################
 def remoteAddFriend(friend_id):
-    data = conn.root.exposed_createChat(user_id=USER['email'], friend_id=friend_id)
+    data = conn.root.exposed_createChat(user_id=STORE['user']['email'], friend_id=friend_id)
     return data
 def addFriend(email):
     data = remoteAddFriend(friend_id=email)
     if data['type'] == '@USER/NOTFOUND':
-        print 'ATENÇÃO: ', data['payload']
-        return None
+        print '[ALERT]: ', data['payload']
+        return { }
     return data['payload']
 def userFriendScreen():
     menuChoice = 10
-    global FRIENDSHIP
+    global STORE
     while menuChoice != 0:
         printScreenHeader()
         print('1 - Add Friend')
@@ -51,74 +57,84 @@ def userFriendScreen():
             while email is None:
                 email = raw_input("Email: ")
                 if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
-                    print 'ATENÇÃO -> Por Favor digite um e-mail Valido!'
+                    print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
                     email = None
                 else:
-                    FRIENDSHIP = addFriend(email)
+                    STORE['friendships'] = addFriend(email)
 ################################################################################
 ################################################################################
 ################################################################################
-def printChat(chatHistory):
+def printChat(friend_id):
     printScreenHeader()
     print '##################################################'
-    print 'Historico de conversa com '
+    print 'Historico de conversa com ', friend_id
     print '##################################################'
-    for chat_message in chatHistory:
-        print 'De: ', chatHistory[chat_message]['sender_id']
-        print chatHistory[chat_message]['message']
+    for chat_message in STORE['chats'][friend_id]['messages']:
+        print 'De: ', STORE['chats'][friend_id]['messages'][chat_message]['sender_id']
+        print STORE['chats'][friend_id]['messages'][chat_message]['message']
     print '##################################################'
 def remoteSendMessage(friend_id, message):
-    data = conn.root.sendMessageUser(user_id=USER['email'], friend_id=friend_id, message=message)
+    data = conn.root.sendMessageUser(user_id=STORE['user']['email'], friend_id=friend_id, message=message)
     return data
 def sendMessege(friend_id, message):
     data = remoteSendMessage(friend_id, message)
-    return data['payload']
+    STORE['chats'][friend_id]['messages'] = data['payload']
+    return True
 def remoteGetMessages(friend_id):
-    data = conn.root.chatMessageHistory(user_id=USER['email'], friend_id=friend_id)
+    data = conn.root.chatMessageHistory(user_id=STORE['user']['email'], friend_id=friend_id)
     return data
-def getMessages(email):
-    data = remoteGetMessages(email)
+def getMessages(friend_id):
+    data = remoteGetMessages(friend_id)
     if data['type'] == '@CHAT/ZERO':
-        print 'ATENÇÃO: Não existem mensagens no Chat'
-    return data['payload']
-def userMessageScreen(email):
-    if email not in CHATS:
-        print '+ + + + ATENÇÃO: Não existe amizade entre as partes!'
-        return None
-    printChat(getMessages(email))
-    text = raw_input("Digite o texto de envio: ")
-    printChat(sendMessege(email, text))
+        print '+ + + + [ALERT]: Não existem mensagens no Chat'
+        return False
+    STORE['chats'][friend_id]['messages'] = data['payload']
+    return True
+def userMessageScreen(friend_id):
+    if friend_id not in STORE['chats']:
+        print '+ + + + [ALERT]: Não existe amizade entre as partes!'
+        return False
+    text = ''
+    while True:
+        getMessages(friend_id)
+        printChat(friend_id)
+        text = raw_input("Digite o texto de envio: ")
+        if text != ':q':
+            sendMessege(friend_id, text)
+            printChat(friend_id)
+        else:
+            return True
 ################################################################################
 def printChatList():
     print '##################################################'
-    for chat in CHATS:
-        print 'Chat With: ', CHATS[chat]['chatWith']
+    for chat in STORE['chats']:
+        print 'Chat With: ', STORE['chats'][chat]['chatWith']
     print '##################################################'
 def remoteGetAllUserChats():
-    data = conn.root.allChats(user_id=USER['email'],)
+    data = conn.root.allChats(user_id=STORE['user']['email'])
     return data
 def getUserChats():
     data = remoteGetAllUserChats()
     if data['type'] == '@CHAT/NOTFOUND':
-        print '+ + + + ATENÇÃO: Chat não encontrado'
+        print '+ + + + [ALERT]: Chat não encontrado'
         return { }
     if data['type'] == '@CHAT/ZERO':
-        print '+ + + + ATENÇÃO: Você ainda não conversou com ninguém'
+        print '+ + + + [ALERT]: Você ainda não conversou com ninguém'
         return { }
     return data['payload']
 ################################################################################
 def userChatScreen():
     menuChoice = 10
-    global CHATS
+    global STORE
     while menuChoice != 0:
         printScreenHeader()
-        print('1 - All Chat')
-        print('2 - Open Chat')
-        print('0 - Back to main screen')
+        print '1 - All Chat'
+        print '2 - Open Chat'
+        print '0 - Back to main screen'
         menuChoice = int(input("Choice: "))
         if menuChoice is 1:
-            CHATS = getUserChats()
-            if len(CHATS) > 0:
+            STORE['chats'] = getUserChats()
+            if len(STORE['chats']) > 0:
                 printChatList()
             waitEnter()
         elif menuChoice is 2:
@@ -126,19 +142,19 @@ def userChatScreen():
             while email is None:
                 email = raw_input("Open chat with: ")
                 if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
-                    print 'ATENÇÃO -> Por Favor digite um e-mail Valido!'
+                    print '[ALERT] -> Por Favor digite um e-mail Valido!'
                     email = None
                 else:
-                    userMessageScreen(email=email)
-                    waitEnter()
+                    userMessageScreen(friend_id=email)
+                waitEnter()
         else:
             pass
 ################################################################################
 ################################################################################
 ################################################################################
 def mainScreen():
-    menuChoice = -1
-    while menuChoice != 0:
+    while True:
+        menuChoice = None
         printScreenHeader()
         print('1 - Friends Screen')
         print('2 - Chats Screen')
@@ -159,53 +175,62 @@ def mainScreen():
 ################################################################################
 ################################################################################
 def remoteLogOnSystem(email):
-    user = conn.root.userLogin(user_id=email)
-    return user
+    data = conn.root.userLogin(user_id=email)
+    return data
 def logIn(email):
-    if(re.match(r"[^@]+@[^@]+\.[^@]+", email) == None):
-        print('ATENÇÃO -> Por Favor digite um e-mail Valido!')
-        return None
-    user = remoteLogOnSystem(email=email)
-    if(user['type'] == '@USER/NOTFOUND'):
-        print('ATENÇÃO -> ', user['payload'])
-        return None
-    return user['payload']
+    global STORE
+    if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
+        print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+        return False
+    data = remoteLogOnSystem(email=email)
+    if data['type'] == '@USER/NOTFOUND':
+        print '+ + + + [ALERT] -> Usuario nao encontrado'
+        return False
+    STORE = data['payload']
+    return True
 def remoteCreateUser(email, name):
     data = conn.root.createUser(email=email, name=name)
     return data
 def createAccount(email, name):
-    if(re.match(r"[^@]+@[^@]+\.[^@]+", email) == None):
-        print('ATENÇÃO -> Por Favor digite um e-mail Valido!')
-        return None
-    if(len(name) < 3):
-        print('ATENÇÃO -> Um nome maior que 3 letras é necessario')
-        return None
+    if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
+        print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+        return False
+    if len(name) < 3:
+        print '+ + + + [ALERT] -> Um nome maior que 3 letras eh necessario'
+        return False
     data = remoteCreateUser(email=email, name=name)
-    if (data['type'] == 'VALIDATION/ERROR'):
-        print('ATENÇÃO: ', data['payload'])
-        return None
-    return data['payload']
+    if data['type'] == 'VALIDATION/ERROR':
+        print '+ + + + [ALERT] -> Erro na validacao '
+        return False
+    STORE['user'] = data['payload']
+    return True
 def loginScreen():
-    print('#########################')
-    print('# 1 - Logar\t\t#')
-    print('# 2 - Criar Conta\t#')
-    print('# 0 - Sair\t\t#')
-    print('#########################')
-    loginChoice = int(input("Escolha: "))
-    if(loginChoice == 1):
-        user = None
-        while(user == None):
+    print '#########################'
+    print '# 1 - Login\t\t#'
+    print '# 2 - Join Us\t#'
+    print '# 0 - Exit BroZap\t\t#'
+    print '#########################'
+    loginChoice = int(input("Choice: "))
+    if loginChoice == 1:
+        loopTruth = False
+        while loopTruth is False:
+            email = raw_input("Open chat with: ")
+            if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
+                print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+                loopTruth = False
+            else:
+                loopTruth = logIn(email)
+    elif loginChoice == 2:
+        loopTruth = False
+        while loopTruth is False:
+            print 'Create new account'
             email = raw_input("Email: ")
-            user = logIn(email)
-        return user
-    elif(loginChoice == 2):
-        newUser = None
-        while(newUser == None):
-            print('Cadastrar nova conta')
-            email = raw_input("Email: ")
-            name = raw_input("Nome: ")
-            newUser = createAccount(email=email, name=name)
-        return newUser
+            name = raw_input("Name: ")
+            if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
+                print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+                loopTruth = False
+            else:
+                loopTruth = createAccount(email=email, name=name)
     else:
         exitProgram()
 ################################################################################
@@ -223,11 +248,9 @@ def exitProgram():
 ################################################################################
 ################################################################################
 if __name__ == "__main__":
-    global USER
-    global CHATS
+    global STORE
     os.system('cls||clear')
-    USER = loginScreen()
-    if(USER):
-        CHATS = getUserChats()
+    loginScreen()
+    if len(STORE['user']) > 0:
         mainScreen()
     exitProgram()

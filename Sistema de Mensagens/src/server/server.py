@@ -32,36 +32,43 @@ class ServerService(rpyc.Service):
     def exposed_createUser(cls, name, email):
         logging.info('Start Create User')
         # Validate
-        validation = emailValidation(email)
-        if(len(validation) > 0):
-            logging.debug('Usuario já cadastrado: ' + validation)
-            return validation
+        if(len(email) <= 3):
+            logging.info('Finish Create User - return: VALIDATION/ERROR')
+            return {
+                'type': 'VALIDATION/ERROR',
+                'payload': 'Nome de usuario menor do que o requisitado! O minimo requisitado eh 3.'
+            }
+        if(UserController.findBy_email(email) != None):
+            logging.info('Finish Create User - return: VALIDATION/ERROR')
+            return {
+                'type': 'VALIDATION/ERROR',
+                'payload': 'Usuario ja cadastrado!'
+            }
         # Persiste
         user = User(name=name, email=email)
         user.save()
         # Return
-        data = {
+        logging.info('Finish Create User - return: @USER/DATA')
+        return {
             'type': '@USER/DATA',
             'payload': {
                 'name': user.getName(),
                 'email': user.getemail()
             }
         }
-        logging.debug(data)
-        logging.info('Finish Create User')
-        return data
     @classmethod # this is an exposed method
     def exposed_createChat(cls, user_id, friend_id):
         logging.info('Start Create Chat')
         friend = UserController.findBy_id(friend_id)
         if friend is None:
+            logging.info('Finish Create Chat - return: @USER/NOTFOUND')
             return {
                 'type': '@USER/NOTFOUND',
                 'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
             }
         if len(ChatController.getChatWith(user_id=user_id, friend_id=friend_id)) == 0:
             ChatController.createChat(user_id=user_id, friend_id=friend_id)
-        logging.info('Finish Create Chat')
+        logging.info('Finish Create Chat - return: cls.exposed_allChats(user_id)')
         return cls.exposed_allChats(user_id)
     @classmethod # this is an exposed method
     def exposed_allChats(cls, user_id):
@@ -69,15 +76,16 @@ class ServerService(rpyc.Service):
         chatList = {}
         for chat in ChatController.allUserChat(user_id=user_id):
             if chat[1] == user_id:
-                chatList.setdefault(chat[2], {'chatWith': chat[2], 'created_at': chat[3]})
+                chatList.setdefault(chat[2], {'chatWith': chat[2], 'created_at': chat[3], 'messages': { }})
             else:
-                chatList.setdefault(chat[1], {'chatWith': chat[1], 'created_at': chat[3]})
+                chatList.setdefault(chat[1], {'chatWith': chat[1], 'created_at': chat[3] , 'messages': { }})
         if len(chatList) == 0:
+            logging.info('Finish All Chat - return: @CHAT/ZERO')
             return {
                 'type': '@CHAT/ZERO',
                 'payload': { }
             }
-        logging.info('Finish All Chat')
+        logging.info('Finish All Chat - return: @CHAT/DATA')
         return {
             'type': '@CHAT/DATA',
             'payload': chatList
@@ -164,16 +172,30 @@ class ServerService(rpyc.Service):
         pass
     @classmethod # this is an exposed method
     def exposed_userLogin(cls, user_id):
+        logging.info('Start User Login')
         user = UserController.findBy_email(user_id)
+        chatList = {}
+        for chat in ChatController.allUserChat(user_id=user_id):
+            if chat[1] == user_id:
+                chatList.setdefault(chat[2], {'chatWith': chat[2], 'created_at': chat[3]})
+            else:
+                chatList.setdefault(chat[1], {'chatWith': chat[1], 'created_at': chat[3]})
         if user is None:
+            logging.info('Finish User Login - return: @USER/NOTFOUND')
             return {
                 'type': '@USER/NOTFOUND',
                 'payload': 'Usuario não encontrado'
             }
+        logging.info('Finish User Login - return: @USER/DATA')
         return {
             'type': '@USER/DATA',
             'payload': {
-                'name': user.getName(),
-                'email': user.getemail()
-                }
+                'user': {
+                    'name': user.getName(),
+                    'email': user.getemail()
+                },
+                'friendships': { },
+                'chats': chatList,
+                'groups': { }
+            }
         }

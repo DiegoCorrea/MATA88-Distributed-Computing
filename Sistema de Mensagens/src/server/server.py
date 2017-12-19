@@ -10,6 +10,7 @@ from validation import emailValidation
 
 import controllers.chats as ChatController
 import controllers.users as UserController
+import controllers.groups as GroupController
 
 
 userList = { }
@@ -116,8 +117,37 @@ class ServerService(rpyc.Service):
             'payload': chatMessageHistory
         }
     @classmethod # this is an exposed method
-    def exposed_createGroup(cls, group):
-        pass
+    def exposed_createGroup(cls, user_id, group_name):
+        group_id = GroupController.createGroup(group_name)
+        if len(group_id) == 0:
+            return {
+                'type': '@GROUP/ZERO',
+                'payload': { }
+            }
+        GroupController.addUser(user_id, group_id)
+        return cls.exposed_userAllGroups(user_id)
+    @classmethod # this is an exposed method
+    def exposed_userAllGroups(cls, user_id):
+        logging.info('Start User All Groups')
+        groupList = {}
+        for group in GroupController.userGroups(user_id=user_id):
+            groupList.setdefault(group[0], {
+                'id': group[0],
+                'user_id': group[1],
+                'group_id': group[2],
+                'created_at': group[3]
+            })
+        if len(groupList) == 0:
+            logging.info('Finish User All Groups - return: @GROUP/ZERO')
+            return {
+                'type': '@GROUP/ZERO',
+                'payload': { }
+            }
+        logging.info('Finish User All Groups - return: @GROUP/DATA')
+        return {
+            'type': '@GROUP/DATA',
+            'payload': groupList
+        }
     #
     # REMOVERS
     #

@@ -46,7 +46,8 @@ print('Groups ')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS groups (
         id CHAR(32) NOT NULL PRIMARY KEY,
-        name CHAR(32) NOT NULL
+        name CHAR(32) NOT NULL,
+        created_at TEXT NOT NULL
 );
 """)
 print('...Ok!')

@@ -14,7 +14,37 @@ STORE = {
 ################################################################################
 ################################################################################
 ################################################################################
-
+def remoteCreateGroup(group_name):
+    data = conn.root.createGroup(STORE['user']['email'], group_name)
+    return data
+def createGroup():
+    group_name = raw_input("Give a name: ")
+    data = remoteCreateGroup(group_name)
+    print '============================='
+    print data['payload']
+    print '============================='
+################################################################################
+def groupScreen():
+    menuChoice = 10
+    global STORE
+    while menuChoice != 0:
+        printScreenHeader()
+        print '1 - Create a Group'
+        print '2 - Enter in a Group'
+        print '3 - List All Your Groups'
+        print '4 - Open Group Chat'
+        print '0 - Back To Main Screen'
+        menuChoice = int(input("Choice: "))
+        if menuChoice is 1:
+            createGroup()
+        elif menuChoice is 2:
+            pass
+        elif menuChoice is 3:
+            pass
+        elif menuChoice is 4:
+            pass
+        else:
+            pass
 ################################################################################
 ################################################################################
 ################################################################################
@@ -166,7 +196,7 @@ def mainScreen():
         elif menuChoice is 2:
             userChatScreen()
         elif menuChoice is 3:
-            pass
+            groupScreen()
         elif menuChoice is 0:
             exitProgram()
         else:

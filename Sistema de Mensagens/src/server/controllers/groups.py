@@ -8,7 +8,7 @@ def createGroup(group_name):
     cursor.execute("""
         INSERT INTO groups (id, name, created_at)
         VALUES (?, ?, ?)
-    """, (group_id ,group_name, strftime("%Y-%m-%d %H:%M:%S", gmtime())))
+    """, (group_id, group_name, strftime("%Y-%m-%d %H:%M:%S", gmtime())))
     conn.commit()
     conn.close()
     return group_id
@@ -54,3 +54,16 @@ def addUser(user_id, group_id):
     """, (user_id, group_id, strftime("%Y-%m-%d %H:%M:%S", gmtime())))
     conn.commit()
     conn.close()
+
+def findBy_ID(group_id):
+    conn = sqlite3.connect('./db/whatsApp.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM groups
+        WHERE id = ?;
+    """, (group_id,))
+    data = cursor.fetchone()
+    conn.close()
+    if data is None:
+        return []
+    return data

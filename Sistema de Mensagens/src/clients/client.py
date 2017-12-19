@@ -14,15 +14,28 @@ STORE = {
 ################################################################################
 ################################################################################
 ################################################################################
+def printGroupList():
+    printScreenHeader()
+    print '##################################################'
+    print 'Group List'
+    print '--------------------------------------------------'
+    if len(STORE['groups']) > 0:
+        for group_id in STORE['groups']:
+            print 'Group CODE: % ', STORE['groups'][group_id]['group_id'], ' %'
+            print 'Group Name: ', STORE['groups'][group_id]['name']
+            print 'Join At:', STORE['groups'][group_id]['join_at'], '|| Group since: ', STORE['groups'][group_id]['created_at']
+            print '--------------------------------------------------'
+    else:
+        print 'No groups added'
+    print '##################################################'
 def remoteCreateGroup(group_name):
     data = conn.root.createGroup(STORE['user']['email'], group_name)
     return data
 def createGroup():
     group_name = raw_input("Give a name: ")
     data = remoteCreateGroup(group_name)
-    print '============================='
-    print data['payload']
-    print '============================='
+    STORE['groups'] = data['payload']
+    print 'Group created successfully!'
 ################################################################################
 def groupScreen():
     menuChoice = 10
@@ -37,10 +50,12 @@ def groupScreen():
         menuChoice = int(input("Choice: "))
         if menuChoice is 1:
             createGroup()
+            waitEnter()
         elif menuChoice is 2:
             pass
         elif menuChoice is 3:
-            pass
+            printGroupList()
+            waitEnter()
         elif menuChoice is 4:
             pass
         else:
@@ -59,7 +74,7 @@ def waitEnter():
 def printScreenHeader():
     os.system('cls||clear')
     print '##################################################'
-    print 'Sessão: ( ', STORE['user']['name'], ' - ', STORE['user']['email'], ' )'
+    print 'Session: ( ', STORE['user']['name'], ' - ', STORE['user']['email'], ' )'
     print '##################################################'
 ################################################################################
 ################################################################################

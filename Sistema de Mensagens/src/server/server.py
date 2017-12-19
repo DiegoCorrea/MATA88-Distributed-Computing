@@ -129,24 +129,27 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_userAllGroups(cls, user_id):
         logging.info('Start User All Groups')
-        groupList = {}
-        for group in GroupController.userGroups(user_id=user_id):
-            groupList.setdefault(group[0], {
-                'id': group[0],
-                'user_id': group[1],
-                'group_id': group[2],
-                'created_at': group[3]
-            })
+        groupList = GroupController.userGroups(user_id=user_id)
         if len(groupList) == 0:
             logging.info('Finish User All Groups - return: @GROUP/ZERO')
             return {
                 'type': '@GROUP/ZERO',
                 'payload': { }
             }
+        groupData = { }
+        for userGroup in groupList:
+            group = GroupController.findBy_ID(userGroup[2])
+            groupData.setdefault(userGroup[2], {
+                'group_id': userGroup[2],
+                'name': group[1],
+                'join_at': userGroup[3],
+                'created_at': group[2],
+                'messages': { }
+            })
         logging.info('Finish User All Groups - return: @GROUP/DATA')
         return {
             'type': '@GROUP/DATA',
-            'payload': groupList
+            'payload': groupData
         }
     #
     # REMOVERS

@@ -30,10 +30,11 @@ class ServerService(rpyc.Service):
     #
     @classmethod # this is an exposed method
     def exposed_createUser(cls, name, email):
+        logging.info('Start Create User')
         # Validate
         validation = emailValidation(email)
         if(len(validation) > 0):
-            logging.debug(validation)
+            logging.debug('Usuario já cadastrado: ' + validation)
             return validation
         # Persiste
         user = User(name=name, email=email)
@@ -47,9 +48,11 @@ class ServerService(rpyc.Service):
             }
         }
         logging.debug(data)
+        logging.info('Finish Create User')
         return data
     @classmethod # this is an exposed method
     def exposed_createChat(cls, user_id, friend_id):
+        logging.info('Start Create Chat')
         friend = UserController.findBy_id(friend_id)
         if friend is None:
             return {
@@ -58,9 +61,11 @@ class ServerService(rpyc.Service):
             }
         if len(ChatController.getChatWith(user_id=user_id, friend_id=friend_id)) == 0:
             ChatController.createChat(user_id=user_id, friend_id=friend_id)
+        logging.info('Finish Create Chat')
         return cls.exposed_allChats(user_id)
     @classmethod # this is an exposed method
     def exposed_allChats(cls, user_id):
+        logging.info('Start All Chat')
         chatList = {}
         for chat in ChatController.allUserChat(user_id=user_id):
             if chat[1] == user_id:
@@ -72,6 +77,7 @@ class ServerService(rpyc.Service):
                 'type': '@CHAT/ZERO',
                 'payload': { }
             }
+        logging.info('Finish All Chat')
         return {
             'type': '@CHAT/DATA',
             'payload': chatList

@@ -151,6 +151,18 @@ class ServerService(rpyc.Service):
             'type': '@GROUP/DATA',
             'payload': groupData
         }
+    @classmethod # this is an exposed method
+    def exposed_addUserToGroup(cls, user_id, group_id):
+        logging.info('Start User To a Group')
+        newGroup = GroupController.findBy_ID(group_id=group_id)
+        if len(newGroup) == 0
+            logging.info('Finish User To a Group - return: @GROUP/ZERO')
+            return {
+                'type': '@GROUP/NOTFOUND',
+                'payload': { }
+            }
+
+
     #
     # REMOVERS
     #

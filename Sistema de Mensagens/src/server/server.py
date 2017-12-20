@@ -37,14 +37,15 @@ class ServerService(rpyc.Service):
                 'type': '@VALIDATION/SMALL_NAME',
                 'payload': { }
             }
-        if len(UserController.findBy_email(email)) == 0:
+        if len(UserController.findBy_email(email)) != 0:
             logging.info('Finish [Create User] - return: @VALIDATION/EXISTENT')
             return {
                 'type': '@VALIDATION/EXISTENT',
                 'payload': { }
             }
         # Persiste
-        user = UserController.create(email=email, name=name)
+        UserController.create(email=email, name=name)
+        user = UserController.findBy_email(email=email)
         # Return
         logging.info('Finish [Create User] - return: @USER/DATA')
         return {

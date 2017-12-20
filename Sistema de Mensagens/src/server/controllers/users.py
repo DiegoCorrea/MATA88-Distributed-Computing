@@ -1,6 +1,7 @@
 import sqlite3
 import sys
 sys.path.append('..')
+from time import gmtime, strftime
 
 def create(email, name):
     conn = sqlite3.connect('./db/whatsApp.db')
@@ -8,7 +9,7 @@ def create(email, name):
     cursor.execute("""
         INSERT INTO users (email, name, created_at, updated_at)
         VALUES (?, ?, ?, ?);
-    """, (email, name, datetime.now(), datetime.now()))
+    """, (email, name, strftime("%Y-%m-%d %H:%M:%S", gmtime()), strftime("%Y-%m-%d %H:%M:%S", gmtime())))
     conn.commit()
     conn.close()
 

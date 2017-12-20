@@ -33,7 +33,7 @@ def printGroupList():
     print '##################################################'
     print 'Group List'
     print '--------------------------------------------------'
-    if len(STORE['groups']) > 0:
+    if len(STORE['groups']) != 0:
         for group_id in STORE['groups']:
             print 'Group CODE: % ', STORE['groups'][group_id]['group_id'], ' %'
             print 'Group Name: ', STORE['groups'][group_id]['name']
@@ -120,15 +120,15 @@ def userFriendScreen():
         print('2 - All Friends')
         print('0 - Back to main screen')
         menuChoice = int(input("Choice: "))
-        if menuChoice is 1:
+        if menuChoice == 1:
             email = None
-            while email is None:
+            while email == None:
                 email = raw_input("Email: ")
                 if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
                     print '+ + + + [ALERT] -> Please type a valid email address'
                     email = None
                 else:
-                    STORE['friendships'] = addFriend(email)
+                    STORE['chats'] = addFriend(email)
 ################################################################################
 ################################################################################
 ################################################################################
@@ -137,7 +137,7 @@ def printChat(friend_id):
     print '##################################################'
     print 'Chat with ', friend_id
     print '##################################################'
-    if len(STORE['chats'][friend_id]['messages']) == 0:
+    if len(STORE['chats'][friend_id]['messages']) != 0:
         for chat_message in STORE['chats'][friend_id]['messages']:
             print 'De: ', STORE['chats'][friend_id]['messages'][chat_message]['sender_id']
             print STORE['chats'][friend_id]['messages'][chat_message]['message']
@@ -189,7 +189,7 @@ def printChatList():
     print '##################################################'
     print '= Chat List ='
     print '##################################################'
-    if len(STORE['chats']) == 0:
+    if len(STORE['chats']) != 0:
         for chat in STORE['chats']:
             print 'Chat With: ', STORE['chats'][chat]['chatWith']
             print '--------------------------------------------------'

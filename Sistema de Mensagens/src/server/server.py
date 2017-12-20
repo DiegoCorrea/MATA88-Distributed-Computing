@@ -7,6 +7,7 @@ import logging
 import controllers.chats as ChatController
 import controllers.users as UserController
 import controllers.groups as GroupController
+import controllers.contacts as ContactController
 
 class ServerService(rpyc.Service):
     def on_connect(self):

@@ -249,3 +249,47 @@ class ServerService(rpyc.Service):
         GroupController.addUser(user_id, group_id)
         logging.info('Finish [Add User To a Group] - return: cls.exposed_userAllGroups(user_id)')
         return cls.exposed_userAllGroups(user_id)
+    # # # # # # # # # # # #
+    # CONTACT Interface   #
+    # # # # # # # # # # # #
+    @classmethod # this is an exposed method
+    def exposed_addContact(cls, user_id, contact_id):
+        logging.info('Start [Add Contact]')
+        contact = ContactController.findBy_ID(user_id=user_id, contact_id=contact_id)
+        if len(contact) == 0:
+            logging.info('Finish [Add Contact] - return: @USER/NOTFOUND')
+            return {
+                'type': '@USER/NOTFOUND',
+                'payload': { }
+            }
+        ContactController.create(user_id=user_id, contact_id=contact_id)
+        logging.info('Finish [Add Contact] - return: cls.exposed_allUserContacts(user_id)')
+        return cls.exposed_allUserContacts(user_id)
+    @classmethod # this is an exposed method
+    def exposed_allUserContacts(cls, user_id):
+        user = UserController.findBy_email(user_id)
+        if len(user) == 0:
+            logging.info('Finish [User All Groups] - return: @USER/NOTFOUND')
+            return {
+                'type': '@USER/NOTFOUND',
+                'payload': { }
+            }
+        contacts = ContactController.all(user_id=user_id)
+        if len(contacts) == 0:
+            logging.info('Finish [User All Groups] - return: @@@@@@@@@@@@@@@')
+            return {
+                'type': '@@@@@@@@@@@@@',
+                'payload': { }
+            }
+        userContactList = { }
+        for contact in contacts:
+            groupData.setdefault(contact[2], {
+                'contact_id': contact[2],
+                'name': '!!!!!!!!!!!!!!!!!',
+                'created_at': contact[3],
+            })
+        logging.info('Finish [User All Groups] - return: @GROUP/DATA')
+        return {
+            'type': '@GROUP/DATA',
+            'payload': groupData
+        }

@@ -1,20 +1,12 @@
 # -*- coding: utf-8 -*-
 import rpyc
-import sys
-import operator
+import sys, re, operator
 sys.path.append('..')
 import logging
-from models.user import User
-from models.group import Group
-from validation import emailValidation
 
 import controllers.chats as ChatController
 import controllers.users as UserController
 import controllers.groups as GroupController
-
-
-userList = { }
-groupList = { }
 
 class ServerService(rpyc.Service):
     def on_connect(self):
@@ -26,76 +18,138 @@ class ServerService(rpyc.Service):
         # code that runs when the connection has already closed
         # (to finalize the service, if needed)
         pass
-    #
-    # CREATORS
-    #
+    # # # # # # # # # # # #
+    # USER Interface      #
+    # # # # # # # # # # # #
     @classmethod # this is an exposed method
     def exposed_createUser(cls, name, email):
-        logging.info('Start Create User')
+        logging.info('Start [Create User]')
         # Validate
-        if(len(email) <= 3):
-            logging.info('Finish Create User - return: VALIDATION/ERROR')
+        if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
+            logging.info('Finish [Create User] - return: @VALIDATION/ERROR')
             return {
-                'type': 'VALIDATION/ERROR',
-                'payload': 'Nome de usuario menor do que o requisitado! O minimo requisitado eh 3.'
+                'type': '@VALIDATION/NOT_EMAIL',
+                'payload': { }
             }
-        if(UserController.findBy_email(email) != None):
-            logging.info('Finish Create User - return: VALIDATION/ERROR')
+        if len(name) == 0:
+            logging.info('Finish [Create User] - return: @VALIDATION/SMALL_NAME')
             return {
-                'type': 'VALIDATION/ERROR',
-                'payload': 'Usuario ja cadastrado!'
+                'type': '@VALIDATION/SMALL_NAME',
+                'payload': { }
+            }
+        if len(UserController.findBy_email(email)) == 0:
+            logging.info('Finish [Create User] - return: @VALIDATION/EXISTENT')
+            return {
+                'type': '@VALIDATION/EXISTENT',
+                'payload': { }
             }
         # Persiste
-        user = User(name=name, email=email)
-        user.save()
+        user = UserController.create(email=email, name=name)
         # Return
-        logging.info('Finish Create User - return: @USER/DATA')
+        logging.info('Finish [Create User] - return: @USER/DATA')
         return {
             'type': '@USER/DATA',
             'payload': {
-                'name': user.getName(),
-                'email': user.getemail()
+                'email': user[0],
+                'name': user[1]
             }
         }
     @classmethod # this is an exposed method
-    def exposed_createChat(cls, user_id, friend_id):
-        logging.info('Start Create Chat')
-        friend = UserController.findBy_id(friend_id)
-        if friend is None:
-            logging.info('Finish Create Chat - return: @USER/NOTFOUND')
+    def exposed_findUserByEmail(cls, email):
+        logging.info('Start [FIND USER BY EMAIL]')
+        user = UserController.findBy_email(email)
+        if len(user) == 0:
+            logging.info('Finish [FIND USER BY EMAIL] - return @USER/NOTFOUND')
             return {
                 'type': '@USER/NOTFOUND',
-                'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
+                'payload': { }
+            }
+        logging.info('Finish [FIND USER BY EMAIL] - return @USER/DATA')
+        return {
+            'type': '@USER/DATA',
+            'payload': {
+                'email': user[0],
+                'name': user[1]
+            }
+        }
+    @classmethod # this is an exposed method
+    def exposed_userLogin(cls, user_id):
+        logging.info('Start [User Login]')
+        user = UserController.findBy_email(user_id)
+        if len(user) == 0:
+            logging.info('Finish [User Login] - return: @USER/NOTFOUND')
+            return {
+                'type': '@USER/NOTFOUND',
+                'payload': { }
+            }
+        chatList = cls.exposed_allChats(user_id)
+        userGroups = cls.exposed_userAllGroups(user_id)
+        logging.info('Finish [User Login] - return: @USER/DATA')
+        return {
+            'type': '@USER/DATA',
+            'payload': {
+                'user': {
+                    'email': user[0],
+                    'name': user[1]
+                },
+                'friendships': { },
+                'chats': chatList['payload'],
+                'groups': userGroups['payload']
+            }
+        }
+    # # # # # # # # # # # #
+    # USER CHAT Interface #
+    # # # # # # # # # # # #
+    @classmethod # this is an exposed method
+    def exposed_createChat(cls, user_id, friend_id):
+        logging.info('Start [Create Chat]')
+        user = UserController.findBy_ID(user_id)
+        friend = UserController.findBy_ID(friend_id)
+        if len(friend) == 0 or len(user) == 0:
+            logging.info('Finish [Create Chat] - return: @USER/NOTFOUND')
+            return {
+                'type': '@USER/NOTFOUND',
+                'payload': { }
             }
         if len(ChatController.getChatWith(user_id=user_id, friend_id=friend_id)) == 0:
             ChatController.createChat(user_id=user_id, friend_id=friend_id)
-        logging.info('Finish Create Chat - return: cls.exposed_allChats(user_id)')
+        logging.info('Finish [Create Chat] - return: cls.exposed_allChats(user_id)')
         return cls.exposed_allChats(user_id)
     @classmethod # this is an exposed method
     def exposed_allChats(cls, user_id):
-        logging.info('Start All Chat')
-        chatList = {}
+        logging.info('Start [All Chat]')
+        userChatList = {}
         for chat in ChatController.allUserChat(user_id=user_id):
             if chat[1] == user_id:
-                chatList.setdefault(chat[2], {'chatWith': chat[2], 'created_at': chat[3], 'messages': { }})
+                userChatList.setdefault(chat[2], {
+                    'chatWith': chat[2],
+                    'created_at': chat[3],
+                    'messages': { }
+                })
             else:
-                chatList.setdefault(chat[1], {'chatWith': chat[1], 'created_at': chat[3] , 'messages': { }})
-        if len(chatList) == 0:
-            logging.info('Finish All Chat - return: @CHAT/ZERO')
+                userChatList.setdefault(chat[1], {
+                    'chatWith': chat[1],
+                    'created_at': chat[3] ,
+                    'messages': { }
+                })
+        if len(userChatList) == 0:
+            logging.info('Finish [All Chat] - return: @CHAT/ZERO')
             return {
                 'type': '@CHAT/ZERO',
                 'payload': { }
             }
-        logging.info('Finish All Chat - return: @CHAT/DATA')
+        logging.info('Finish [All Chat] - return: @CHAT/DATA')
         return {
             'type': '@CHAT/DATA',
-            'payload': chatList
+            'payload': userChatList
         }
     @classmethod # this is an exposed method
     def exposed_chatMessageHistory(cls, user_id, friend_id):
+        logging.info('Start [CHAT MESSAGE HISTORY]')
         chatMessageHistory = {}
         chat = ChatController.getChatWith(user_id, friend_id)
         if len(chat) == 0:
+            logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/NOTFOUND')
             return {
                 'type': '@CHAT/NOTFOUND',
                 'payload': { }
@@ -108,30 +162,60 @@ class ServerService(rpyc.Service):
                 'created_at': chat_message[4]
             })
         if len(chatMessageHistory) == 0:
+            logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/MESSAGE/ZERO')
             return {
-                'type': '@CHAT/ZERO',
+                'type': '@CHAT/MESSAGE/ZERO',
                 'payload': { }
             }
+        logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/MESSAGE/DATA')
         return {
-            'type': '@CHAT/DATA',
+            'type': '@CHAT/MESSAGE/DATA',
             'payload': chatMessageHistory
         }
     @classmethod # this is an exposed method
+    def exposed_sendMessageUser(cls, user_id, friend_id, message):
+        logging.info('Start [SEND MESSAGE USER]')
+        chat = ChatController.getChatWith(user_id=user_id, friend_id=friend_id)
+        if len(chat) == 0:
+            ChatController.createChat(user_id=user_id, friend_id=friend_id)
+            chat = ChatController.getChatWith(user_id=user_id, friend_id=friend_id)
+            if len(chat) == 0:
+                logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/NOTFOUND')
+                return {
+                    'type': '@CHAT/NOTFOUND',
+                    'payload': { }
+                }
+        ChatController.setChatMessage(chat_id=chat[0], sender_id=user_id, message=message)
+        logging.info('Finish [SEND MESSAGE USER] - return: cls.exposed_chatMessageHistory(user_id, friend_id)')
+        return cls.exposed_chatMessageHistory(user_id, friend_id)
+    # # # # # # # # # #
+    # GROUP Interface #
+    # # # # # # # # # #
+    @classmethod # this is an exposed method
     def exposed_createGroup(cls, user_id, group_name):
+        logging.info('Start [CREATE GROUP]')
+        if len(group_name) == 0:
+            logging.info('Finish [CREATE GROUP] - return: @VALIDATION/SMALL_NAME')
+            return {
+                'type': '@VALIDATION/SMALL_NAME',
+                'payload': { }
+            }
         group_id = GroupController.createGroup(group_name)
         if len(group_id) == 0:
+            logging.info('Finish [CREATE GROUP] - return: @GROUP/ZERO')
             return {
                 'type': '@GROUP/ZERO',
                 'payload': { }
             }
         GroupController.addUser(user_id, group_id)
+        logging.info('Finish [CREATE GROUP] - return: cls.exposed_userAllGroups(user_id)')
         return cls.exposed_userAllGroups(user_id)
     @classmethod # this is an exposed method
     def exposed_userAllGroups(cls, user_id):
-        logging.info('Start User All Groups')
+        logging.info('Start [User All Groups]')
         groupList = GroupController.userGroups(user_id=user_id)
         if len(groupList) == 0:
-            logging.info('Finish User All Groups - return: @GROUP/ZERO')
+            logging.info('Finish [User All Groups] - return: @GROUP/ZERO')
             return {
                 'type': '@GROUP/ZERO',
                 'payload': { }
@@ -146,101 +230,20 @@ class ServerService(rpyc.Service):
                 'created_at': group[2],
                 'messages': { }
             })
-        logging.info('Finish User All Groups - return: @GROUP/DATA')
+        logging.info('Finish [User All Groups] - return: @GROUP/DATA')
         return {
             'type': '@GROUP/DATA',
             'payload': groupData
         }
     @classmethod # this is an exposed method
     def exposed_addUserToGroup(cls, user_id, group_id):
-        logging.info('Start User To a Group')
-        newGroup = GroupController.findBy_ID(group_id=group_id)
-        if len(newGroup) == 0
-            logging.info('Finish User To a Group - return: @GROUP/ZERO')
+        logging.info('Start [Add User To a Group]')
+        if len(GroupController.findBy_ID(group_id=group_id)) == 0:
+            logging.info('Finish [Add User To a Group] - return: @GROUP/NOTFOUND')
             return {
                 'type': '@GROUP/NOTFOUND',
                 'payload': { }
             }
-
-
-    #
-    # REMOVERS
-    #
-    @classmethod # this is an exposed method
-    def exposed_deleteUser(cls, id):
-        pass
-    @classmethod # this is an exposed method
-    def exposed_deleteGroup(cls, id):
-        pass
-    #
-    # SENDERS
-    #
-    @classmethod # this is an exposed method
-    def exposed_sendMessageUser(cls, user_id, friend_id, message):
-        chat = ChatController.getChatWith(user_id=user_id, friend_id=friend_id)
-        if len(chat) == 0:
-            ChatController.createChat(user_id=user_id, friend_id=friend_id)
-            chat = ChatController.getChatWith(user_id=user_id, friend_id=friend_id)
-            if len(chat) == 0:
-                return {
-                    'type': '@USER/NOTFOUND',
-                    'payload': 'Amigo nao encontrado! Verifique se o e-mail esta correto.'
-                }
-        ChatController.setChatMessage(chat_id=chat[0], sender_id=user_id, message=message)
-        return cls.exposed_chatMessageHistory(user_id, friend_id)
-    @classmethod # this is an exposed method
-    def exposed_sendMessageGroup(cls, id, message):
-        pass
-    #
-    # FINDERS
-    #
-    @classmethod # this is an exposed method
-    def exposed_findUserByEmail(cls, email):
-        user = UserController.findBy_email(email)
-        if user is None:
-            return {
-                'type': '@USER/NOTFOUND',
-                'payload': 'Usuario não encontrado'
-            }
-        return {
-            'type': '@USER/DATA',
-            'payload': user
-        }
-    @classmethod # this is an exposed method
-    def exposed_findGroupByName(cls, name):
-        pass
-    @classmethod # this is an exposed method
-    def exposed_findUserById(cls, id):
-        pass
-    @classmethod # this is an exposed method
-    def exposed_findGroupById(cls, id):
-        pass
-    @classmethod # this is an exposed method
-    def exposed_userLogin(cls, user_id):
-        logging.info('Start User Login')
-        user = UserController.findBy_email(user_id)
-        chatList = {}
-        for chat in ChatController.allUserChat(user_id=user_id):
-            if chat[1] == user_id:
-                chatList.setdefault(chat[2], {'chatWith': chat[2], 'created_at': chat[3]})
-            else:
-                chatList.setdefault(chat[1], {'chatWith': chat[1], 'created_at': chat[3]})
-        if user is None:
-            logging.info('Finish User Login - return: @USER/NOTFOUND')
-            return {
-                'type': '@USER/NOTFOUND',
-                'payload': 'Usuario não encontrado'
-            }
-        logging.info('Finish User Login - return: @USER/DATA')
-        return {
-            'type': '@USER/DATA',
-            'payload': {
-                'user': {
-                    'name': user.getName(),
-                    'email': user.getemail()
-                },
-                'friendships': { },
-                'chats': chatList,
-                'groups': { }
-            }
-        }
+        GroupController.addUser(user_id, group_id)
+        logging.info('Finish [Add User To a Group] - return: cls.exposed_userAllGroups(user_id)')
+        return cls.exposed_userAllGroups(user_id)

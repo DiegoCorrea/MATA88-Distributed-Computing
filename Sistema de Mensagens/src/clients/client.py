@@ -14,6 +14,20 @@ STORE = {
 ################################################################################
 ################################################################################
 ################################################################################
+def remoteAddUserToGroup(group_id):
+    data = conn.root.addUserToGroup(STORE['user']['email'], group_id)
+    return data
+def enterGroup():
+    group_id = raw_input("Group ID: ")
+    data = remoteAddUserToGroup(group_id)
+    if data['type'] == '@GROUP/NOTFOUND':
+        print '+ + + + [ALERT] -> Group not found'
+        return { }
+    if data['type'] == '@GROUP/ZERO':
+        print '+ + + + [ALERT] -> Cant Create the group'
+        return { }
+    STORE['groups'] = data['payload']
+    print 'Group created successfully!'
 def printGroupList():
     printScreenHeader()
     print '##################################################'
@@ -34,6 +48,15 @@ def remoteCreateGroup(group_name):
 def createGroup():
     group_name = raw_input("Give a name: ")
     data = remoteCreateGroup(group_name)
+    if data['type'] == '@VALIDATION/SMALL_NAME':
+        print '+ + + + [ALERT] -> Name to small'
+        return { }
+    if data['type'] == '@GROUP/ZERO':
+        print '+ + + + [ALERT] -> Cant Create the group'
+        return { }
+    if data['type'] == '@USER/NOTFOUND':
+        print '+ + + + [ALERT] -> User not found'
+        return { }
     STORE['groups'] = data['payload']
     print 'Group created successfully!'
 ################################################################################
@@ -52,7 +75,7 @@ def groupScreen():
             createGroup()
             waitEnter()
         elif menuChoice is 2:
-            pass
+            enterGroup()
         elif menuChoice is 3:
             printGroupList()
             waitEnter()
@@ -66,7 +89,7 @@ def groupScreen():
 def waitEnter():
     menuChoice = 'a'
     while menuChoice != '':
-        menuChoice = raw_input("Precione Enter para sair")
+        menuChoice = raw_input("Press Enter to continue...")
     os.system('cls||clear')
 ################################################################################
 ################################################################################
@@ -102,7 +125,7 @@ def userFriendScreen():
             while email is None:
                 email = raw_input("Email: ")
                 if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
-                    print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+                    print '+ + + + [ALERT] -> Please type a valid email address'
                     email = None
                 else:
                     STORE['friendships'] = addFriend(email)
@@ -112,17 +135,26 @@ def userFriendScreen():
 def printChat(friend_id):
     printScreenHeader()
     print '##################################################'
-    print 'Historico de conversa com ', friend_id
+    print 'Chat with ', friend_id
     print '##################################################'
-    for chat_message in STORE['chats'][friend_id]['messages']:
-        print 'De: ', STORE['chats'][friend_id]['messages'][chat_message]['sender_id']
-        print STORE['chats'][friend_id]['messages'][chat_message]['message']
+    if len(STORE['chats'][friend_id]['messages']) == 0:
+        for chat_message in STORE['chats'][friend_id]['messages']:
+            print 'De: ', STORE['chats'][friend_id]['messages'][chat_message]['sender_id']
+            print STORE['chats'][friend_id]['messages'][chat_message]['message']
+    else:
+        print 'No messages yet'
     print '##################################################'
 def remoteSendMessage(friend_id, message):
     data = conn.root.sendMessageUser(user_id=STORE['user']['email'], friend_id=friend_id, message=message)
     return data
 def sendMessege(friend_id, message):
     data = remoteSendMessage(friend_id, message)
+    if data['type'] == '@USER/NOTFOUND':
+        print '+ + + + [ALERT] -> User not found'
+        return False
+    if data['type'] == '@CHAT/ZERO':
+        print '+ + + + [ALERT]: No chat found'
+        return False
     STORE['chats'][friend_id]['messages'] = data['payload']
     return True
 def remoteGetMessages(friend_id):
@@ -130,20 +162,23 @@ def remoteGetMessages(friend_id):
     return data
 def getMessages(friend_id):
     data = remoteGetMessages(friend_id)
-    if data['type'] == '@CHAT/ZERO':
-        print '+ + + + [ALERT]: Não existem mensagens no Chat'
+    if data['type'] == '@USER/NOTFOUND':
+        print '+ + + + [ALERT] -> User not found'
+        return False
+    if data['type'] == '@CHAT/MESSAGE/ZERO':
+        print '+ + + + [ALERT]: No message yet'
         return False
     STORE['chats'][friend_id]['messages'] = data['payload']
     return True
 def userMessageScreen(friend_id):
     if friend_id not in STORE['chats']:
-        print '+ + + + [ALERT]: Não existe amizade entre as partes!'
+        print '+ + + + [ALERT]: No friendships, cant send messages!'
         return False
     text = ''
     while True:
         getMessages(friend_id)
         printChat(friend_id)
-        text = raw_input("Digite o texto de envio: ")
+        text = raw_input("Text to send (':q' to exit): ")
         if text != ':q':
             sendMessege(friend_id, text)
             printChat(friend_id)
@@ -152,19 +187,22 @@ def userMessageScreen(friend_id):
 ################################################################################
 def printChatList():
     print '##################################################'
-    for chat in STORE['chats']:
-        print 'Chat With: ', STORE['chats'][chat]['chatWith']
+    print '= Chat List ='
+    print '##################################################'
+    if len(STORE['chats']) == 0:
+        for chat in STORE['chats']:
+            print 'Chat With: ', STORE['chats'][chat]['chatWith']
+            print '--------------------------------------------------'
+    else:
+        print 'You has no chats!'
     print '##################################################'
 def remoteGetAllUserChats():
     data = conn.root.allChats(user_id=STORE['user']['email'])
     return data
 def getUserChats():
     data = remoteGetAllUserChats()
-    if data['type'] == '@CHAT/NOTFOUND':
-        print '+ + + + [ALERT]: Chat não encontrado'
-        return { }
     if data['type'] == '@CHAT/ZERO':
-        print '+ + + + [ALERT]: Você ainda não conversou com ninguém'
+        print '+ + + + [ALERT]: No chat found'
         return { }
     return data['payload']
 ################################################################################
@@ -177,17 +215,17 @@ def userChatScreen():
         print '2 - Open Chat'
         print '0 - Back to main screen'
         menuChoice = int(input("Choice: "))
-        if menuChoice is 1:
+        if menuChoice == 1:
             STORE['chats'] = getUserChats()
             if len(STORE['chats']) > 0:
                 printChatList()
             waitEnter()
-        elif menuChoice is 2:
+        elif menuChoice == 2:
             email = None
-            while email is None:
+            while email == None:
                 email = raw_input("Open chat with: ")
                 if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
-                    print '[ALERT] -> Por Favor digite um e-mail Valido!'
+                    print '+ + + + [ALERT] -> Please type a valid email address'
                     email = None
                 else:
                     userMessageScreen(friend_id=email)
@@ -206,13 +244,13 @@ def mainScreen():
         print('3 - Groups Screen')
         print('0 - Exit BroZap')
         menuChoice = int(input("Choice: "))
-        if menuChoice is 1:
+        if menuChoice == 1:
             userFriendScreen()
-        elif menuChoice is 2:
+        elif menuChoice == 2:
             userChatScreen()
-        elif menuChoice is 3:
+        elif menuChoice == 3:
             groupScreen()
-        elif menuChoice is 0:
+        elif menuChoice == 0:
             exitProgram()
         else:
             pass
@@ -225,11 +263,11 @@ def remoteLogOnSystem(email):
 def logIn(email):
     global STORE
     if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
-        print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+        print '+ + + + [ALERT] -> Please type a valid email address'
         return False
     data = remoteLogOnSystem(email=email)
     if data['type'] == '@USER/NOTFOUND':
-        print '+ + + + [ALERT] -> Usuario nao encontrado'
+        print '+ + + + [ALERT] -> User not found'
         return False
     STORE = data['payload']
     return True
@@ -238,14 +276,20 @@ def remoteCreateUser(email, name):
     return data
 def createAccount(email, name):
     if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
-        print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+        print '+ + + + [ALERT] -> Please type a valid email address'
         return False
     if len(name) < 3:
-        print '+ + + + [ALERT] -> Um nome maior que 3 letras eh necessario'
+        print '+ + + + [ALERT] -> Name to small'
         return False
     data = remoteCreateUser(email=email, name=name)
-    if data['type'] == 'VALIDATION/ERROR':
-        print '+ + + + [ALERT] -> Erro na validacao '
+    if data['type'] == '@VALIDATION/NOT_EMAIL':
+        print '+ + + + [ALERT] -> It is not a valid email'
+        return False
+    if data['type'] == '@VALIDATION/SMALL_NAME':
+        print '+ + + + [ALERT] -> Name to small'
+        return False
+    if data['type'] == '@VALIDATION/EXISTENT':
+        print '+ + + + [ALERT] -> Choice another account id'
         return False
     STORE['user'] = data['payload']
     return True
@@ -258,21 +302,21 @@ def loginScreen():
     loginChoice = int(input("Choice: "))
     if loginChoice == 1:
         loopTruth = False
-        while loopTruth is False:
-            email = raw_input("Open chat with: ")
+        while loopTruth == False:
+            email = raw_input("Login ID: ")
             if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
-                print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+                print '+ + + + [ALERT] -> Please type a valid email address'
                 loopTruth = False
             else:
                 loopTruth = logIn(email)
     elif loginChoice == 2:
         loopTruth = False
-        while loopTruth is False:
+        while loopTruth == False:
             print 'Create new account'
             email = raw_input("Email: ")
             name = raw_input("Name: ")
             if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
-                print '+ + + + [ALERT] -> Por Favor digite um e-mail Valido!'
+                print '+ + + + [ALERT] -> Please type a valid email address'
                 loopTruth = False
             else:
                 loopTruth = createAccount(email=email, name=name)
@@ -284,8 +328,8 @@ def loginScreen():
 def exitProgram():
     os.system('cls||clear')
     print('#################################')
-    print '|\tBroZap Finalizado!\t|'
-    print '|\tTe vemos na proxima\t|'
+    print '|\tBroZap Burn!\t|'
+    print '|\tTchuss!\t|'
     print('#################################')
     conn.close()
     exit()

@@ -86,6 +86,7 @@ class ServerService(rpyc.Service):
             }
         chatList = cls.exposed_allChats(user_id)
         userGroups = cls.exposed_userAllGroups(user_id)
+        contactList = cls.exposed_getAllUserContacts(user_id)
         logging.info('Finish [User Login] - return: @USER/DATA')
         return {
             'type': '@USER/DATA',
@@ -94,7 +95,7 @@ class ServerService(rpyc.Service):
                     'email': user[0],
                     'name': user[1]
                 },
-                'friendships': { },
+                'contacts': contactList['payload'],
                 'chats': chatList['payload'],
                 'groups': userGroups['payload']
             }
@@ -255,19 +256,27 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_addContact(cls, user_id, contact_id):
         logging.info('Start [Add Contact]')
-        contact = ContactController.findBy_ID(user_id=user_id, contact_id=contact_id)
-        if len(contact) == 0:
+        userData = UserController.findBy_ID(user_id=user_id)
+        contactData = UserController.findBy_ID(user_id=contact_id)
+        if len(contactData) == 0 or len(userData) == 0:
             logging.info('Finish [Add Contact] - return: @USER/NOTFOUND')
             return {
                 'type': '@USER/NOTFOUND',
                 'payload': { }
             }
+        contact = ContactController.findBy_ID(user_id=user_id, contact_id=contact_id)
+        if len(contact) != 0:
+            logging.info('Finish [Add Contact] - return: @CONTACT/ISALREADY')
+            return {
+                'type': '@CONTACT/ISALREADY',
+                'payload': { }
+            }
         ContactController.create(user_id=user_id, contact_id=contact_id)
         logging.info('Finish [Add Contact] - return: cls.exposed_allUserContacts(user_id)')
-        return cls.exposed_allUserContacts(user_id)
+        return cls.exposed_getAllUserContacts(user_id)
     @classmethod # this is an exposed method
-    def exposed_allUserContacts(cls, user_id):
-        user = UserController.findBy_email(user_id)
+    def exposed_getAllUserContacts(cls, user_id):
+        user = UserController.findBy_ID(user_id=user_id)
         if len(user) == 0:
             logging.info('Finish [User All Groups] - return: @USER/NOTFOUND')
             return {
@@ -276,20 +285,21 @@ class ServerService(rpyc.Service):
             }
         contacts = ContactController.all(user_id=user_id)
         if len(contacts) == 0:
-            logging.info('Finish [User All Groups] - return: @@@@@@@@@@@@@@@')
+            logging.info('Finish [User All Groups] - return: @USER/CONTACT/ZERO')
             return {
-                'type': '@@@@@@@@@@@@@',
+                'type': '@USER/CONTACT/ZERO',
                 'payload': { }
             }
         userContactList = { }
         for contact in contacts:
-            groupData.setdefault(contact[2], {
+            contactData = UserController.findBy_email(contact[2])
+            userContactList.setdefault(contact[2], {
                 'contact_id': contact[2],
-                'name': '!!!!!!!!!!!!!!!!!',
+                'name': contactData[1],
                 'created_at': contact[3],
             })
-        logging.info('Finish [User All Groups] - return: @GROUP/DATA')
+        logging.info('Finish [User All Groups] - return: @USER/CONTACT/DATA')
         return {
-            'type': '@GROUP/DATA',
-            'payload': groupData
+            'type': '@USER/CONTACT/DATA',
+            'payload': userContactList
         }

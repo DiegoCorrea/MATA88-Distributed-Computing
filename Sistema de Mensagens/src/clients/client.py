@@ -7,7 +7,7 @@ SERVER_PORT = 27000
 conn = rpyc.connect(SERVER_IP, SERVER_PORT)
 STORE = {
     'user': { },
-    'friendships': { },
+    'contacts': { },
     'chats': { },
     'groups': { }
 }
@@ -86,6 +86,14 @@ def groupScreen():
 ################################################################################
 ################################################################################
 ################################################################################
+def readEmailFromKey():
+    email = ''
+    while email == '':
+        email = raw_input("Email: ")
+        if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
+            print '+ + + + [ALERT] -> Please type a valid email address'
+            email = ''
+    return email
 def waitEnter():
     menuChoice = 'a'
     while menuChoice != '':
@@ -97,45 +105,72 @@ def waitEnter():
 def printScreenHeader():
     os.system('cls||clear')
     print '##################################################'
-    print 'Session: ( ', STORE['user']['name'], ' - ', STORE['user']['email'], ' )'
+    print '# Session: ( ', STORE['user']['name'], ' - ', STORE['user']['email'], ' )'
     print '##################################################'
 ################################################################################
 ################################################################################
 ################################################################################
-def remoteAddFriend(friend_id):
-    data = conn.root.exposed_createChat(user_id=STORE['user']['email'], friend_id=friend_id)
+def printAllContacts():
+    printScreenHeader()
+    print '##################################################'
+    print '# All Contacts'
+    print '##################################################'
+    if len(STORE['contacts']) != 0:
+        for contact in STORE['contacts']:
+            print 'Name: ', STORE['contacts'][contact]
+            print 'Email: ', STORE['contacts'][contact]
+            print '--------------------------------------------------'
+    else:
+        print 'No contacts yet'
+    print '##################################################'
+def remoteGetAllUserContacts():
+    data = conn.root.getAllUserContacts(user_id=STORE['user']['email'])
     return data
-def addFriend(email):
-    data = remoteAddFriend(friend_id=email)
+def getAllContacts():
+    data = remoteGetAllUserContacts()
     if data['type'] == '@USER/NOTFOUND':
-        print '[ALERT]: ', data['payload']
-        return { }
-    return data['payload']
+        print '+ + + + [ALERT]: User not found'
+        return ''
+    if data['payload'] == '@USER/CONTACT/ZERO':
+        print '+ + + + [ALERT]: No contacts'
+        return ''
+    STORE['contacts'] = data['payload']
+    printAllContacts()
+    return ''
+def remoteAddFriend(contact_id):
+    data = conn.root.addContact(user_id=STORE['user']['email'], contact_id=contact_id)
+    return data
+def addFriend(contact_id):
+    data = remoteAddFriend(contact_id=contact_id)
+    if data['type'] == '@USER/NOTFOUND':
+        print '+ + + + [ALERT]: User not found'
+        return ''
+    if data['type'] == '@CONTACT/ISALREADY':
+        print '+ + + + [ALERT]: Contact is already your friend.'
+        return ''
+    STORE['contacts'] = data['payload']
+    return ''
 def userFriendScreen():
     menuChoice = 10
     global STORE
     while menuChoice != 0:
         printScreenHeader()
-        print('1 - Add Friend')
-        print('2 - All Friends')
-        print('0 - Back to main screen')
+        print '1 - Add Friend'
+        print '2 - All Friends'
+        print '0 - Back to main screen'
         menuChoice = int(input("Choice: "))
         if menuChoice == 1:
-            email = None
-            while email == None:
-                email = raw_input("Email: ")
-                if re.match(r"[^@]+@[^@]+\.[^@]+", email) is None:
-                    print '+ + + + [ALERT] -> Please type a valid email address'
-                    email = None
-                else:
-                    STORE['chats'] = addFriend(email)
+            addFriend(contact_id=readEmailFromKey())
+        elif menuChoice == 2:
+            getAllContacts()
+        waitEnter()
 ################################################################################
 ################################################################################
 ################################################################################
 def printChat(friend_id):
     printScreenHeader()
     print '##################################################'
-    print 'Chat with ', friend_id
+    print '# Chat with ', friend_id
     print '##################################################'
     if len(STORE['chats'][friend_id]['messages']) != 0:
         for chat_message in STORE['chats'][friend_id]['messages']:
@@ -170,10 +205,22 @@ def getMessages(friend_id):
         return False
     STORE['chats'][friend_id]['messages'] = data['payload']
     return True
+def remoteCreateChat(friend_id):
+     data = conn.root.exposed_createChat(user_id=STORE['user']['email'], friend_id=friend_id)
+     return data
+def createChat(email):
+     data = remoteCreateChat(friend_id=email)
+     if data['type'] == '@USER/NOTFOUND':
+         print '[ALERT]: ', data['payload']
+         return ''
+     STORE['chats'] = data['payload']
+     return ''
 def userMessageScreen(friend_id):
-    if friend_id not in STORE['chats']:
+    if friend_id not in STORE['contacts']:
         print '+ + + + [ALERT]: No friendships, cant send messages!'
         return False
+    if friend_id not in STORE['chats']:
+        createChat(friend_id)
     text = ''
     while True:
         getMessages(friend_id)
@@ -217,9 +264,7 @@ def userChatScreen():
         menuChoice = int(input("Choice: "))
         if menuChoice == 1:
             STORE['chats'] = getUserChats()
-            if len(STORE['chats']) > 0:
-                printChatList()
-            waitEnter()
+            printChatList()
         elif menuChoice == 2:
             email = None
             while email == None:
@@ -229,9 +274,7 @@ def userChatScreen():
                     email = None
                 else:
                     userMessageScreen(friend_id=email)
-                waitEnter()
-        else:
-            pass
+        waitEnter()
 ################################################################################
 ################################################################################
 ################################################################################

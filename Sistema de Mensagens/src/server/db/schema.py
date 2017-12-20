@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
 print('...Ok!')
 print('Friends')
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS contact (
+CREATE TABLE IF NOT EXISTS contacts (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         user_id CHAR(64) NOT NULL,
         contact_id CHAR(64) NOT NULL,

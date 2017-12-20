@@ -8,7 +8,7 @@ def create(user_id, contact_id):
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO contacts (user_id, contact_id, created_at)
-        VALUES (?, ?, ?, ?);
+        VALUES (?, ?, ?);
     """, (user_id, contact_id, strftime("%Y-%m-%d %H:%M:%S", gmtime())))
     conn.commit()
     conn.close()

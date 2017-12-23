@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys, os
+from time import sleep
 import rpyc
 import re
 import socket, errno
@@ -11,6 +12,9 @@ STORE = {
     'contacts': { },
     'chats': { },
     'groups': { }
+}
+CONFIG = {
+    'connected': False
 }
 ################################################################################
 ################################################################################
@@ -56,11 +60,72 @@ def waitEnter():
         menuChoice = raw_input("Press Enter to continue... ")
     os.system('cls||clear')
 def printScreenHeader():
+    global STORE
     os.system('cls||clear')
     print '##################################################'
     print '# Session: ( ', STORE['user']['name'], ' - ', STORE['user']['email'], ' )'
     print '##################################################'
 ################################################################################
+################################################################################
+################################################################################
+def exitProgram():
+    os.system('cls||clear')
+    global SERVERCONNECTION
+    try:
+        SERVERCONNECTION.close()
+        print('#################################')
+        print '|\tBroZap Burn!\t\t|'
+        print '|\tTchuss!\t\t\t|'
+        print('#################################')
+    except (IndexError, socket.error, EOFError):
+        print('#################################')
+        print '|\tA Error is raised!\t|'
+        print '|\tTchuss!\t\t\t|'
+        print('#################################')
+    except AttributeError:
+        print('#################################')
+        print '|\tCant close the comunication!\t|'
+        print '|\tTchuss!\t\t\t|'
+        print('#################################')
+    exit()
+def exitProgramWithError():
+    os.system('cls||clear')
+    global SERVERCONNECTION
+    try:
+        SERVERCONNECTION.close()
+        print('#################################')
+        print '|\tBroZap Burn!\t\t|'
+        print '|\tTchuss!\t\t\t|'
+        print('#################################')
+    except (IndexError, socket.error, EOFError):
+        print('#################################')
+        print '|\tA Error is raised!\t|'
+        print '|\tTchuss!\t\t\t|'
+        print('#################################')
+    except AttributeError:
+        print('#################################')
+        print '|\tCant close the comunication!\t|'
+        print '|\tTchuss!\t\t\t|'
+        print('#################################')
+    exit()
+################################################################################
+################################################################################
+def connectWithServer():
+    global SERVERCONNECTION
+    global CONFIG
+    count = 0
+    while CONFIG['connected'] == False:
+        try:
+            SERVERCONNECTION = rpyc.connect(SERVER_IP, SERVER_PORT)
+            CONFIG['connected'] = True
+        except socket.error, AttributeError:
+            print '+ + + + [ALERT]'
+            print '\tIt\'s not possible connect with the server'
+            print '\tTry Again again!'
+            sleep(1)
+            count += 1
+            if count > 30:
+                exitProgramWithError()
 ################################################################################
 ################################################################################
 def remoteAddUserToGroup(group_id):
@@ -178,18 +243,20 @@ def getAllContacts():
     if data['type'] == '@USER/NOTFOUND':
         print '+ + + + [ALERT]: User not found'
         return ''
-    if data['payload'] == '@USER/CONTACT/ZERO':
+    if data['type'] == '@USER/CONTACT/ZERO':
         print '+ + + + [ALERT]: No contacts'
         return ''
     if data['type'] == 'ERROR/CONNECTION':
         print '+ + + + [ALERT] -> Connection Error!'
         return ''
-    STORE['contacts'] = data['payload']
+    if data['type'] == '@USER/CONTACT/DATA':
+        STORE['contacts'] = data['payload']
 def remoteaddContact(contact_id):
     try:
         data = SERVERCONNECTION.root.addContact(user_id=STORE['user']['email'], contact_id=contact_id)
         return data
     except (IndexError, socket.error, AttributeError, EOFError):
+        connectWithServer()
         return {
             'type': 'ERROR/CONNECTION',
             'payload': { }
@@ -317,10 +384,11 @@ def userMessageScreen(contact_id):
             return ''
 ################################################################################
 def printChatList():
+    global STORE
     print '##################################################'
     print '= Chat List ='
     print '##################################################'
-    if len(STORE['chats']) != 0:
+    if len(STORE['chats']) > 0:
         for chat in STORE['chats']:
             print 'Chat With: ', STORE['chats'][chat]['chatWith']
             print '--------------------------------------------------'
@@ -343,6 +411,7 @@ def getUserChats():
         return ''
     if data['type'] == 'ERROR/CONNECTION':
         print '+ + + + [ALERT] -> Connection Error!'
+        print STORE['chats']
         return ''
     STORE['chats'] =  data['payload']
 def userChatScreen():
@@ -362,6 +431,7 @@ def userChatScreen():
         waitEnter()
 ################################################################################
 ################################################################################
+# MAIN SCREEN
 ################################################################################
 def mainScreen():
     while True:
@@ -379,8 +449,11 @@ def mainScreen():
             groupScreen()
         elif menuChoice == 0:
             exitProgram()
+        else:
+            waitEnter
 ################################################################################
 ################################################################################
+# LOGIN SYSTEM AND CREATE ACCOUNT SYSTEM
 ################################################################################
 def remoteLogOnSystem(email):
     try:
@@ -454,37 +527,18 @@ def loginScreen():
             createAccount()
         elif menuChoice == 0:
             exitProgram()
-        else:
-            waitEnter()
+        waitEnter()
 ################################################################################
 ################################################################################
-################################################################################
-def exitProgram():
-    os.system('cls||clear')
-    try:
-        SERVERCONNECTION.close()
-        print('#################################')
-        print '|\tBroZap Burn!\t\t|'
-        print '|\tTchuss!\t\t\t|'
-        print('#################################')
-        exit()
-    except (IndexError, socket.error, AttributeError, EOFError):
-        print('#################################')
-        print '|\tA Error is raised!\t|'
-        print '|\tTchuss!\t\t\t|'
-        print('#################################')
-        exit()
-################################################################################
-################################################################################
+# MAIN PROGRAM
 ################################################################################
 if __name__ == "__main__":
-    try:
-        SERVERCONNECTION = rpyc.connect(SERVER_IP, SERVER_PORT)
-    except socket.error, AttributeError:
-        exitProgram()
     global STORE
+    global CONFIG
+    connectWithServer()
     os.system('cls||clear')
-    loginScreen()
-    if len(STORE['user']) > 0:
-        mainScreen()
+    if CONFIG['connected'] == True:
+        loginScreen()
+        if len(STORE['user']) > 0:
+            mainScreen()
     exitProgram()

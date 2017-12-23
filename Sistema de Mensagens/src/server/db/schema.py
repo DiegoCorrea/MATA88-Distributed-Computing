@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 """)
 print('...Ok!')
-print('Friends')
+print('Contacts')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS contacts (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -29,15 +29,15 @@ CREATE TABLE IF NOT EXISTS contacts (
 );
 """)
 print('...Ok!')
-print('Chat')
+print('Chats')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS chats (
         id CHAR(64) NOT NULL PRIMARY KEY,
         user_id CHAR(64) NOT NULL,
-        friend_id CHAR(64) NOT NULL,
+        contact_id CHAR(64) NOT NULL,
         created_at DATE NOT NULL,
         FOREIGN KEY(user_id) REFERENCES users(email),
-        FOREIGN KEY(friend_id) REFERENCES users(email)
+        FOREIGN KEY(contact_id) REFERENCES users(email)
 );
 """)
 print('...Ok!')

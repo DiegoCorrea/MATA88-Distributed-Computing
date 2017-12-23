@@ -104,18 +104,18 @@ class ServerService(rpyc.Service):
     # USER CHAT Interface #
     # # # # # # # # # # # #
     @classmethod # this is an exposed method
-    def exposed_createChat(cls, user_id, friend_id):
+    def exposed_createChat(cls, user_id, contact_id):
         logging.info('Start [Create Chat]')
         user = UserController.findBy_ID(user_id)
-        friend = UserController.findBy_ID(friend_id)
+        friend = UserController.findBy_ID(contact_id)
         if len(friend) == 0 or len(user) == 0:
             logging.info('Finish [Create Chat] - return: @USER/NOTFOUND')
             return {
                 'type': '@USER/NOTFOUND',
                 'payload': { }
             }
-        if len(ChatController.getChatWith(user_id=user_id, friend_id=friend_id)) == 0:
-            ChatController.createChat(user_id=user_id, friend_id=friend_id)
+        if len(ChatController.getChatWith(user_id=user_id, contact_id=contact_id)) == 0:
+            ChatController.createChat(user_id=user_id, contact_id=contact_id)
         logging.info('Finish [Create Chat] - return: cls.exposed_allChats(user_id)')
         return cls.exposed_allChats(user_id)
     @classmethod # this is an exposed method
@@ -147,10 +147,10 @@ class ServerService(rpyc.Service):
             'payload': userChatList
         }
     @classmethod # this is an exposed method
-    def exposed_chatMessageHistory(cls, user_id, friend_id):
+    def exposed_chatMessageHistory(cls, user_id, contact_id):
         logging.info('Start [CHAT MESSAGE HISTORY]')
         chatMessageHistory = {}
-        chat = ChatController.getChatWith(user_id, friend_id)
+        chat = ChatController.getChatWith(user_id, contact_id)
         if len(chat) == 0:
             logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/NOTFOUND')
             return {
@@ -176,12 +176,12 @@ class ServerService(rpyc.Service):
             'payload': chatMessageHistory
         }
     @classmethod # this is an exposed method
-    def exposed_sendMessageUser(cls, user_id, friend_id, message):
+    def exposed_sendMessageUser(cls, user_id, contact_id, message):
         logging.info('Start [SEND MESSAGE USER]')
-        chat = ChatController.getChatWith(user_id=user_id, friend_id=friend_id)
+        chat = ChatController.getChatWith(user_id=user_id, contact_id=contact_id)
         if len(chat) == 0:
-            ChatController.createChat(user_id=user_id, friend_id=friend_id)
-            chat = ChatController.getChatWith(user_id=user_id, friend_id=friend_id)
+            ChatController.createChat(user_id=user_id, contact_id=contact_id)
+            chat = ChatController.getChatWith(user_id=user_id, contact_id=contact_id)
             if len(chat) == 0:
                 logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/NOTFOUND')
                 return {
@@ -189,8 +189,8 @@ class ServerService(rpyc.Service):
                     'payload': { }
                 }
         ChatController.setChatMessage(chat_id=chat[0], sender_id=user_id, message=message)
-        logging.info('Finish [SEND MESSAGE USER] - return: cls.exposed_chatMessageHistory(user_id, friend_id)')
-        return cls.exposed_chatMessageHistory(user_id, friend_id)
+        logging.info('Finish [SEND MESSAGE USER] - return: cls.exposed_chatMessageHistory(user_id, contact_id)')
+        return cls.exposed_chatMessageHistory(user_id, contact_id)
     # # # # # # # # # #
     # GROUP Interface #
     # # # # # # # # # #

@@ -3,13 +3,13 @@ import uuid
 from datetime import datetime
 from time import gmtime, strftime
 
-def createChat(user_id, friend_id):
+def createChat(user_id, contact_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO chats (id, user_id, friend_id, created_at)
+        INSERT INTO chats (id, user_id, contact_id, created_at)
         VALUES (?, ?, ?, ?)
-    """, (str(uuid.uuid4()), user_id, friend_id, strftime("%Y-%m-%d %H:%M:%S", gmtime())))
+    """, (str(uuid.uuid4()), user_id, contact_id, strftime("%Y-%m-%d %H:%M:%S", gmtime())))
     conn.commit()
     conn.close()
 
@@ -17,8 +17,8 @@ def allUserChat(user_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, user_id, friend_id, created_at FROM chats
-        WHERE user_id = ? OR friend_id = ?;
+        SELECT id, user_id, contact_id, created_at FROM chats
+        WHERE user_id = ? OR contact_id = ?;
     """, (user_id, user_id,))
     itens = cursor.fetchall()
     conn.close()
@@ -29,13 +29,13 @@ def allUserChat(user_id):
         data.append(linha)
     return data
 
-def getChatWith(user_id, friend_id):
+def getChatWith(user_id, contact_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, friend_id, created_at FROM chats
-        WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?);
-    """, (user_id, friend_id, friend_id, user_id,))
+        SELECT id, contact_id, created_at FROM chats
+        WHERE (user_id = ? AND contact_id = ?) OR (user_id = ? AND contact_id = ?);
+    """, (user_id, contact_id, contact_id, user_id,))
     data = cursor.fetchone()
     conn.close()
     if data is None:

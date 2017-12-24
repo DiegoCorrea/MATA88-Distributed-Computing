@@ -173,7 +173,7 @@ class ServerService(rpyc.Service):
         logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/MESSAGE/DATA')
         return {
             'type': '@CHAT/MESSAGE/DATA',
-            'payload': chatMessageHistory
+            'payload': sorted(chatMessageHistory)
         }
     @classmethod # this is an exposed method
     def exposed_sendMessageUser(cls, user_id, contact_id, message):

@@ -127,9 +127,16 @@ def connectWithServer():
     count = 0
     while CONFIG['connected'] == False:
         try:
-            SERVERCONNECTION = rpyc.connect(SERVER_IP, SERVER_PORT, config={'allow_public_attrs': True,"allow_pickle": True})
+            SERVERCONNECTION = rpyc.connect(
+                SERVER_IP,
+                SERVER_PORT,
+                config = {
+                    'allow_public_attrs': True,
+                    "allow_pickle": True
+                }
+            )
             CONFIG['connected'] = True
-        except socket.error, AttributeError:
+        except (socket.error, AttributeError):
             print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
             print '\tMessage: '
             print '\tIt\'s not possible connect with the server'
@@ -361,7 +368,7 @@ def remoteGetMessages(contact_id):
     try:
         data = SERVERCONNECTION.root.chatMessageHistory(user_id=STORE['user']['email'], contact_id=contact_id)
         return data
-    except (IndexError, socket.error, AttributeError, EOFError):
+    except (IndexError, socket.error, AttributeError, EOFError, TypeError):
         return {
             'type': 'ERROR/CONNECTION',
             'payload': { }
@@ -379,6 +386,10 @@ def getMessages(contact_id):
     if data['type'] == 'ERROR/CONNECTION':
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: Connection Error!'
+        return ''
+    if data['type'] == '@SERVER/ERROR':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: Server Error'
         return ''
     STORE['chats'][contact_id]['messages'] = data['payload']
 def remoteCreateChat(contact_id):
@@ -431,6 +442,7 @@ def userMessageScreen(contact_id):
             print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
             print '\tMessage: Wrong Input, try again!'
             text = ''
+            waitEnter()
 ################################################################################
 def printChatList():
     global STORE

@@ -3,6 +3,7 @@ import rpyc
 import sys, re, operator
 sys.path.append('..')
 import logging
+import collections
 
 import controllers.chats as ChatController
 import controllers.users as UserController
@@ -149,32 +150,39 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_chatMessageHistory(cls, user_id, contact_id):
         logging.info('Start [CHAT MESSAGE HISTORY]')
-        chatMessageHistory = {}
-        chat = ChatController.getChatWith(user_id, contact_id)
-        if len(chat) == 0:
-            logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/NOTFOUND')
+        try:
+            chatMessageHistory = {}
+            chat = ChatController.getChatWith(user_id, contact_id)
+            if len(chat) == 0:
+                logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/NOTFOUND')
+                return {
+                    'type': '@CHAT/NOTFOUND',
+                    'payload': { }
+                }
+            for chat_message in ChatController.getChatMessages(chat[0]):
+                chatMessageHistory.setdefault(chat_message[4], {
+                    'chat_id': chat_message[1],
+                    'sender_id': chat_message[2],
+                    'message': chat_message[3],
+                    'created_at': chat_message[4]
+                })
+            if len(chatMessageHistory) == 0:
+                logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/MESSAGE/ZERO')
+                return {
+                    'type': '@CHAT/MESSAGE/ZERO',
+                    'payload': { }
+                }
+            logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/MESSAGE/DATA')
             return {
-                'type': '@CHAT/NOTFOUND',
+                'type': '@CHAT/MESSAGE/DATA',
+                'payload': collections.OrderedDict(sorted(chatMessageHistory.items()))
+            }
+        except TypeError:
+            logging.error('Finish [CHAT MESSAGE HISTORY] - return: @SERVER/ERROR')
+            return {
+                'type': '@SERVER/ERROR',
                 'payload': { }
             }
-        for chat_message in ChatController.getChatMessages(chat[0]):
-            chatMessageHistory.setdefault(chat_message[4], {
-                'chat_id': chat_message[1],
-                'sender_id': chat_message[2],
-                'message': chat_message[3],
-                'created_at': chat_message[4]
-            })
-        if len(chatMessageHistory) == 0:
-            logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/MESSAGE/ZERO')
-            return {
-                'type': '@CHAT/MESSAGE/ZERO',
-                'payload': { }
-            }
-        logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/MESSAGE/DATA')
-        return {
-            'type': '@CHAT/MESSAGE/DATA',
-            'payload': sorted(chatMessageHistory)
-        }
     @classmethod # this is an exposed method
     def exposed_sendMessageUser(cls, user_id, contact_id, message):
         logging.info('Start [SEND MESSAGE USER]')

@@ -21,7 +21,7 @@ class ServerService(rpyc.Service):
         # (to finalize the service, if needed)
         pass
     # # # # # # # # # # # #
-    # USER Interface      #
+    #    USER Interface   #
     # # # # # # # # # # # #
     @classmethod # this is an exposed method
     def exposed_createUser(cls, name, email):
@@ -86,7 +86,7 @@ class ServerService(rpyc.Service):
                 'payload': { }
             }
         chatList = cls.exposed_allChats(user_id)
-        userGroups = cls.exposed_userAllGroups(user_id)
+        userGroups = cls.exposed_getAllUserGroups(user_id)
         contactList = cls.exposed_getAllUserContacts(user_id)
         logging.info('Finish [User Login] - return: @USER/DATA')
         return {
@@ -211,19 +211,33 @@ class ServerService(rpyc.Service):
                 'type': '@VALIDATION/SMALL_NAME',
                 'payload': { }
             }
-        group_id = GroupController.createGroup(group_name)
+        group_id = GroupController.create(group_name=group_name)
         if len(group_id) == 0:
-            logging.info('Finish [CREATE GROUP] - return: @GROUP/ZERO')
+            logging.info('Finish [CREATE GROUP] - return: @GROUP/CANT_CREATE')
             return {
-                'type': '@GROUP/ZERO',
+                'type': '@GROUP/CANT_CREATE',
                 'payload': { }
             }
-        GroupController.addUser(user_id, group_id)
-        logging.info('Finish [CREATE GROUP] - return: cls.exposed_userAllGroups(user_id)')
-        return cls.exposed_userAllGroups(user_id)
+        GroupController.addUser(user_id=user_id, group_id=group_id)
+        logging.info('Finish [CREATE GROUP] - return: @GROUP/DATA')
+        group = GroupController.findBy_ID(group_id=group_id)
+        return {
+            'type': '@GROUP/DATA',
+            'payload': {
+                'id': group[0],
+                'name': group[1],
+                'created_at': group[2]
+            }
+        }
     @classmethod # this is an exposed method
-    def exposed_userAllGroups(cls, user_id):
+    def exposed_getAllUserGroups(cls, user_id):
         logging.info('Start [User All Groups]')
+        if len(UserController.findBy_ID(user_id=user_id)) == 0:
+            logging.info('Finish [User All Groups] - return: @USER/NOTFOUND')
+            return {
+                'type': '@USER/NOTFOUND',
+                'payload': { }
+            }
         groupList = GroupController.userGroups(user_id=user_id)
         if len(groupList) == 0:
             logging.info('Finish [User All Groups] - return: @GROUP/ZERO')
@@ -239,7 +253,7 @@ class ServerService(rpyc.Service):
                 'name': group[1],
                 'join_at': userGroup[3],
                 'created_at': group[2],
-                'messages': { }
+                'messages': cls.exposed_groupMessageHistory(user_id=user_id, group_id=userGroup[2])['payload']
             })
         logging.info('Finish [User All Groups] - return: @GROUP/DATA')
         return {
@@ -256,8 +270,57 @@ class ServerService(rpyc.Service):
                 'payload': { }
             }
         GroupController.addUser(user_id, group_id)
-        logging.info('Finish [Add User To a Group] - return: cls.exposed_userAllGroups(user_id)')
-        return cls.exposed_userAllGroups(user_id)
+        logging.info('Finish [Add User To a Group] - return: cls.exposed_getAllUserGroups(user_id)')
+        return cls.exposed_getAllUserGroups(user_id)
+    @classmethod # this is an exposed method
+    def exposed_groupMessageHistory(cls, user_id, group_id):
+        logging.info('Start [GROUP MESSAGE HISTORY]')
+        try:
+            messageHistory = {}
+            group = GroupController.findBy_ID(group_id=group_id)
+            if len(group) == 0:
+                logging.info('Finish [GROUP MESSAGE HISTORY] - return: @GROUP/NOTFOUND')
+                return {
+                    'type': '@GROUP/NOTFOUND',
+                    'payload': { }
+                }
+            for message in GroupController.getMessages(group_id=group[0]):
+                messageHistory.setdefault(message[3], {
+                    'user_id': message[1],
+                    'group_id': message[2],
+                    'message': message[4],
+                    'created_at': message[3]
+                })
+            if len(messageHistory) == 0:
+                logging.info('Finish [GROUP MESSAGE HISTORY] - return: @GROUP/MESSAGE/ZERO')
+                return {
+                    'type': '@GROUP/MESSAGE/ZERO',
+                    'payload': { }
+                }
+            logging.info('Finish [GROUP MESSAGE HISTORY] - return: @GROUP/MESSAGE/DATA')
+            return {
+                'type': '@GROUP/MESSAGE/DATA',
+                'payload': collections.OrderedDict(sorted(messageHistory.items()))
+            }
+        except TypeError:
+            logging.error('Finish [GROUP MESSAGE HISTORY] - return: @SERVER/ERROR')
+            return {
+                'type': '@SERVER/ERROR',
+                'payload': { }
+            }
+    @classmethod # this is an exposed method
+    def exposed_sendMessageUser(cls, user_id, group_id, message):
+        logging.info('Start [SEND GROUP MESSAGE]')
+        group = GroupController.findBy_ID(group_id=group_id)
+        if len(group) == 0:
+            logging.info('Finish [GROUP MESSAGE HISTORY] - return: @GROUP/NOTFOUND')
+            return {
+                'type': '@GROUP/NOTFOUND',
+                'payload': { }
+            }
+        GroupController.sendMessage(group_id=group[0], sender_id=user_id, message=message)
+        logging.info('Finish [SEND GROUP MESSAGE] - return: cls.exposed_groupMessageHistory(user_id, group_id)')
+        return cls.exposed_groupMessageHistory(user_id, group_id)
     # # # # # # # # # # # #
     # CONTACT Interface   #
     # # # # # # # # # # # #

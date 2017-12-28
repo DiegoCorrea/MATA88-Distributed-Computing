@@ -80,7 +80,7 @@ print('Group Messages')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS group_messages (
         id CHAR(32) NOT NULL PRIMARY KEY,
-        user_id CHAR(32) NOT NULL,
+        sender_id CHAR(32) NOT NULL,
         group_id CHAR(32) NOT NULL,
         created_at TEXT NOT NULL,
         message TEXT NOT NULL,

@@ -269,6 +269,12 @@ class ServerService(rpyc.Service):
                 'type': '@GROUP/NOTFOUND',
                 'payload': { }
             }
+        if len(GroupController.findBy_ID(group_id=group_id)) == 0:
+            logging.info('Finish [GROUP MESSAGE HISTORY] - return: @GROUP/NOTFOUND')
+            return {
+                'type': '@GROUP/NOTFOUND',
+                'payload': { }
+            }
         GroupController.addUser(user_id, group_id)
         logging.info('Finish [Add User To a Group] - return: cls.exposed_getAllUserGroups(user_id)')
         return cls.exposed_getAllUserGroups(user_id)

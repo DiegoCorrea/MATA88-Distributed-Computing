@@ -285,7 +285,17 @@ class ServerService(rpyc.Service):
             }
         GroupController.addUser(user_id, group_id)
         logging.info('Finish [Add User To a Group] - return: cls.exposed_getAllUserGroups(user_id)')
-        return cls.exposed_getAllUserGroups(user_id)
+        group = GroupController.findBy_ID(group_id=group_id)
+        return {
+            'type': '@GROUP/DATA',
+            'payload': {
+                'id': group[0],
+                'name': group[1],
+                'join_at': group[2],
+                'created_at': group[2],
+                'messages': cls.exposed_groupMessageHistory(user_id=user_id, group_id=group_id)['payload']
+            }
+        }
     @classmethod # this is an exposed method
     def exposed_groupMessageHistory(cls, user_id, group_id):
         logging.info('Start [GROUP MESSAGE HISTORY]')

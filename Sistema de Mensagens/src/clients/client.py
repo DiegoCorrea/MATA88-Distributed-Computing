@@ -210,8 +210,8 @@ def enterGroup():
         print '\tMessage: Connection Error!'
         return ''
     if data['type'] == '@GROUP/DATA':
-        STORE['groups'].setdefault(data['payload']['id'],data['payload'])
-        printGroup(data['payload'][data['payload']])
+        STORE['groups'][data['payload']['id']] = data['payload']
+        printGroup(data['payload'])
 def remoteCreateGroup(group_name):
     try:
         data = SERVERCONNECTION.root.createGroup(user_id=STORE['user']['email'], group_name=group_name)
@@ -243,7 +243,7 @@ def createGroup():
             print '\tMessage: Connection Error!'
             return ''
         if data['type'] == '@GROUP/DATA':
-            STORE['groups'].setdefault(data['payload']['id'],data['payload'])
+            STORE['groups'][data['payload']['id']] = data['payload']
             printGroup(data['payload'])
     except AttributeError, e:
         print 'Algo de errado ocorreu: ', e

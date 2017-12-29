@@ -8,7 +8,7 @@ from rpyc.utils.server import ThreadedServer
 
 def setup_logging(
     default_path='logs/logging.json',
-    default_level=logging.INFO,
+    default_level=logging.DEBUG,
     env_key='LOG_CFG'
 ):
     """Setup logging configuration

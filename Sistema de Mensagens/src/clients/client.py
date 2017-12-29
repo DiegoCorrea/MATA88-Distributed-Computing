@@ -23,7 +23,7 @@ def readGroupIDFromKey():
     inText = ''
     while inText == '':
         try:
-            inText = raw_input("Type Group Code: ")
+            inText = raw_input("Group Code: ")
         except KeyboardInterrupt:
             exitProgram()
         except (NameError, SyntaxError):

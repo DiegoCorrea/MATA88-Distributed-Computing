@@ -210,7 +210,7 @@ def enterGroup():
         print '\tMessage: Connection Error!'
         return ''
     if data['type'] == '@GROUP/DATA':
-        STORE['groups'] = data['payload']
+        STORE['groups'].setdefault(data['payload']['id'],data['payload'])
         printGroup(data['payload'][data['payload']])
 def remoteCreateGroup(group_name):
     try:
@@ -324,7 +324,7 @@ def getGroupMessages(group_id):
         print '\tMessage: Server Error!'
         return ''
     if data['type'] == '@GROUP/MESSAGE/DATA':
-        STORE['group'][group_id]['messages'] = data['payload']
+        STORE['groups'][group_id]['messages'] = data['payload']
 def groupChatScreen(group_id):
     if group_id not in STORE['groups']:
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'

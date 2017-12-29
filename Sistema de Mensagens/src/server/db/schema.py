@@ -79,12 +79,12 @@ print('...OK!')
 print('Group Messages')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS group_messages (
-        id CHAR(32) NOT NULL PRIMARY KEY,
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         sender_id CHAR(32) NOT NULL,
         group_id CHAR(32) NOT NULL,
         created_at TEXT NOT NULL,
         message TEXT NOT NULL,
-        FOREIGN KEY(user_id) REFERENCES users(id),
+        FOREIGN KEY(sender_id) REFERENCES users(id),
         FOREIGN KEY(group_id) REFERENCES groups(id)
 );
 """)

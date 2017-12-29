@@ -19,37 +19,49 @@ CONFIG = {
 ################################################################################
 ################################################################################
 ################################################################################
+def readGroupIDFromKey():
+    inText = ''
+    while inText == '':
+        try:
+            inText = raw_input("Type Group Code: ")
+        except KeyboardInterrupt:
+            exitProgram()
+        except (NameError, SyntaxError):
+            print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+            print '\tMessage: Wrong Input, try again!'
+            inText = ''
+    return inText
 def readNameFromKey():
-    name = ''
-    while name == '':
+    inText = ''
+    while inText == '':
         try:
-            name = raw_input("Name: ")
+            inText = raw_input("Name: ")
         except KeyboardInterrupt:
             exitProgram()
         except (NameError, SyntaxError):
             print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
             print '\tMessage: Wrong Input, try again!'
-            name = ''
-    return name
+            inText = ''
+    return inText
 def readEmailFromKey():
-    email = ''
-    while email == '':
+    inText = ''
+    while inText == '':
         try:
-            email = raw_input("Email: ")
+            inText = raw_input("Email: ")
         except KeyboardInterrupt:
             exitProgram()
         except (NameError, SyntaxError):
             print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
             print '\tMessage: Wrong Input, try again!'
-            email = ''
-        if re.match(r"[^@]+@[^@]+\.[^@]+", email) == None:
+            inText = ''
+        if re.match(r"[^@]+@[^@]+\.[^@]+", inText) == None:
             print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
             print '\tMessage: Please type a valid email address'
-    return email
+    return inText
 def readMenuChoiceFromKey():
     try:
-        menuChoice = int(input("Choice: "))
-        return menuChoice
+        inText = int(input("Choice: "))
+        return inText
     except KeyboardInterrupt:
         exitProgram()
     except (NameError, SyntaxError):
@@ -58,18 +70,18 @@ def readMenuChoiceFromKey():
         waitEnter()
         return 10
 def waitEnter():
-    menuChoice = 'a'
-    while menuChoice != '':
+    inText = 'a'
+    while inText != '':
         try:
-            menuChoice = raw_input("Press Enter to continue... ")
+            inText = raw_input("Press Enter to continue... ")
             os.system('cls||clear')
-            return menuChoice
+            return inText
         except KeyboardInterrupt:
             exitProgram()
         except (NameError, SyntaxError):
             print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
             print '\tMessage: Wrong Input, try again!'
-            menuChoice = 'a'
+            inText = 'a'
 def printScreenHeader():
     global STORE
     os.system('cls||clear')
@@ -147,9 +159,35 @@ def connectWithServer():
                 exitProgramWithError()
 ################################################################################
 ################################################################################
+################################################################################
+def remoteGetAllUserGroups():
+    pass
+def getAllUserGroups():
+    pass
+def updateGroupStore(newData):
+    pass
+def printGroupList():
+    global STORE
+    printScreenHeader()
+    print '--------------------------------------------------'
+    print '=================== Group List ==================='
+    if len(STORE['groups']) > 0:
+        for group_id in STORE['groups']:
+            printGroup(STORE['groups'][group_id])
+    else:
+        print '--------------------------------------------------'
+        print '+ + + + [Message] -> No groups added'
+        print '##################################################'
+def printGroup(data):
+    print '--------------------------------------------------'
+    print '+ Code:', data['id']
+    print '+ Name:', data['name']
+    print '+ Join at:', data['join_at']
+    print '+ Since at:', data['created_at']
+    print '--------------------------------------------------'
 def remoteAddUserToGroup(group_id):
     try:
-        data = SERVERCONNECTION.root.addUserToGroup(STORE['user']['email'], group_id)
+        data = SERVERCONNECTION.root.addUserToGroup(user_id=STORE['user']['email'], group_id=group_id)
         return data
     except (IndexError, socket.error, AttributeError, EOFError):
         return {
@@ -157,54 +195,11 @@ def remoteAddUserToGroup(group_id):
             'payload': { }
         }
 def enterGroup():
-    group_id = raw_input("Group ID: ")
-    data = remoteAddUserToGroup(group_id)
+    global STORE
+    data = remoteAddUserToGroup(group_id=readGroupIDFromKey())
     if data['type'] == '@GROUP/NOTFOUND':
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: Group not found'
-        return ''
-    if data['type'] == '@GROUP/ZERO':
-        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-        print '\tMessage: Cant Create the group'
-        return ''
-    if data['type'] == 'ERROR/CONNECTION':
-        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-        print '\tMessage: Connection Error!'
-        return ''
-    STORE['groups'] = data['payload']
-def printGroupList():
-    printScreenHeader()
-    print '##################################################'
-    print 'Group List'
-    print '--------------------------------------------------'
-    if len(STORE['groups']) > 0:
-        for group_id in STORE['groups']:
-            print 'Group CODE: % ', STORE['groups'][group_id]['group_id'], ' %'
-            print 'Group Name: ', STORE['groups'][group_id]['name']
-            print 'Join At:', STORE['groups'][group_id]['join_at'], '|| Group since: ', STORE['groups'][group_id]['created_at']
-            print '--------------------------------------------------'
-    else:
-        print '+ + + + [Message] -> No groups added'
-    print '##################################################'
-def remoteCreateGroup(group_name):
-    try:
-        data = SERVERCONNECTION.root.createGroup(STORE['user']['email'], group_name)
-        return data
-    except (IndexError, socket.error, AttributeError, EOFError):
-        return {
-            'type': 'ERROR/CONNECTION',
-            'payload': { }
-        }
-def createGroup():
-    group_name = readNameFromKey()
-    data = remoteCreateGroup(group_name)
-    if data['type'] == '@VALIDATION/SMALL_NAME':
-        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-        print '\tMessage: Name to small'
-        return ''
-    if data['type'] == '@GROUP/ZERO':
-        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-        print '\tMessage: Cant Create the group'
         return ''
     if data['type'] == '@USER/NOTFOUND':
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
@@ -214,14 +209,157 @@ def createGroup():
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: Connection Error!'
         return ''
-    print 'Group created successfully!'
-    STORE['groups'] = data['payload']
+    if data['type'] == '@GROUP/DATA':
+        STORE['groups'] = data['payload']
+        printGroup(data['payload'][data['payload']])
+def remoteCreateGroup(group_name):
+    try:
+        data = SERVERCONNECTION.root.createGroup(user_id=STORE['user']['email'], group_name=group_name)
+        return data
+    except (IndexError, socket.error, AttributeError, EOFError):
+        return {
+            'type': 'ERROR/CONNECTION',
+            'payload': { }
+        }
+def createGroup():
+    try:
+        global STORE
+        group_name = readNameFromKey()
+        data = remoteCreateGroup(group_name)
+        if data['type'] == '@VALIDATION/SMALL_NAME':
+            print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+            print '\tMessage: Name to small'
+            return ''
+        if data['type'] == '@GROUP/CANT_CREATE':
+            print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+            print '\tMessage: Cant Create the group'
+            return ''
+        if data['type'] == '@USER/NOTFOUND':
+            print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+            print '\tMessage: User not found'
+            return ''
+        if data['type'] == 'ERROR/CONNECTION':
+            print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+            print '\tMessage: Connection Error!'
+            return ''
+        if data['type'] == '@GROUP/DATA':
+            STORE['groups'].setdefault(data['payload']['id'],data['payload'])
+            printGroup(data['payload'])
+    except AttributeError, e:
+        print 'Algo de errado ocorreu: ', e
+def printGroupMessages(group_id):
+    printScreenHeader()
+    print '##################################################'
+    print '# Group Chat ', STORE['groups'][group_id]['name']
+    print '##################################################'
+    if len(STORE['groups'][group_id]['messages']) > 0:
+        for message in STORE['groups'][group_id]['messages']:
+            print 'De: ', STORE['groups'][group_id]['messages'][message]['sender_id']
+            print STORE['groups'][group_id]['messages'][message]['message']
+    else:
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: No messages yet'
+    print '##################################################'
+def remoteSendGroupMessage(group_id, message):
+    try:
+        data = SERVERCONNECTION.root.groupSendMessage(user_id=STORE['user']['email'], group_id=group_id, message=message)
+        return data
+    except (IndexError, socket.error, AttributeError, EOFError):
+        return {
+            'type': 'ERROR/CONNECTION',
+            'payload': { }
+        }
+def sendGroupMessege(group_id, message):
+    data = remoteSendGroupMessage(group_id, message)
+    if data['type'] == '@USER/NOTFOUND':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: User not found!'
+        return ''
+    if data['type'] == '@GROUP/NOTFOUND':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: Group not found!'
+        return ''
+    if data['type'] == '@GROUP/MESSAGE/ZERO':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: No message yet!'
+        return ''
+    if data['type'] == 'ERROR/CONNECTION':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: Connection Error!'
+        return ''
+    if data['type'] == '@SERVER/ERROR':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: Server Error!'
+        return ''
+    STORE['groups'][group_id]['messages'] = data['payload']
+def remoteGetGroupMessages(group_id):
+    try:
+        data = SERVERCONNECTION.root.groupMessageHistory(user_id=STORE['user']['email'], group_id=group_id)
+        return data
+    except (IndexError, socket.error, AttributeError, EOFError, TypeError):
+        return {
+            'type': 'ERROR/CONNECTION',
+            'payload': { }
+        }
+def getGroupMessages(group_id):
+    data = remoteGetGroupMessages(group_id)
+    if data['type'] == '@USER/NOTFOUND':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: User not found!'
+        return ''
+    if data['type'] == '@GROUP/NOTFOUND':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: Group not found!'
+        return ''
+    if data['type'] == '@GROUP/MESSAGE/ZERO':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: No message yet!'
+        return ''
+    if data['type'] == 'ERROR/CONNECTION':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: Connection Error!'
+        return ''
+    if data['type'] == '@SERVER/ERROR':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: Server Error!'
+        return ''
+    if data['type'] == '@GROUP/MESSAGE/DATA':
+        STORE['group'][group_id]['messages'] = data['payload']
+def groupChatScreen(group_id):
+    if group_id not in STORE['groups']:
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: You has no groupd added yet!'
+        return ''
+    text = ''
+    while True:
+        try:
+            getGroupMessages(group_id)
+            printGroupMessages(group_id)
+            print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+            print "Commands:"
+            print "\t[:q] to exit"
+            print "\t[:u] to update chat"
+            text = raw_input("Text:")
+            if text == ':q':
+                return ''
+            elif text == ':u' or text == '':
+                pass
+            else:
+                sendGroupMessege(group_id, text)
+        except KeyboardInterrupt:
+            exitProgram()
+        except (NameError, SyntaxError), e:
+            print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+            print '\tMessage: Wrong Input, try again!'
+            print 'Error Message: ', e
+            text = ''
+            waitEnter()
 ################################################################################
 def groupScreen():
-    menuChoice = 10
     global STORE
     while True:
         printScreenHeader()
+        menuChoice = 10
         print '1 - Create a Group'
         print '2 - Enter in a Group'
         print '3 - List All Your Groups'
@@ -235,7 +373,7 @@ def groupScreen():
         elif menuChoice == 3:
             printGroupList()
         elif menuChoice == 4:
-            pass
+            groupChatScreen(group_id=readGroupIDFromKey())
         elif menuChoice == 0:
             return ''
         waitEnter()
@@ -458,7 +596,7 @@ def printChatList():
     print '##################################################'
 def remoteGetAllUserChats():
     try:
-        data = SERVERCONNECTION.root.allChats(user_id=STORE['user']['email'])
+        data = SERVERCONNECTION.root.getAllUserChats(user_id=STORE['user']['email'])
         return data
     except (IndexError, socket.error, AttributeError, EOFError):
         return {

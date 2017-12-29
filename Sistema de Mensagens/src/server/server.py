@@ -85,7 +85,7 @@ class ServerService(rpyc.Service):
                 'type': '@USER/NOTFOUND',
                 'payload': { }
             }
-        chatList = cls.exposed_allChats(user_id)
+        chatList = cls.exposed_getAllUserChats(user_id)
         userGroups = cls.exposed_getAllUserGroups(user_id)
         contactList = cls.exposed_getAllUserContacts(user_id)
         logging.info('Finish [User Login] - return: @USER/DATA')
@@ -117,10 +117,10 @@ class ServerService(rpyc.Service):
             }
         if len(ChatController.getChatWith(user_id=user_id, contact_id=contact_id)) == 0:
             ChatController.createChat(user_id=user_id, contact_id=contact_id)
-        logging.info('Finish [Create Chat] - return: cls.exposed_allChats(user_id)')
-        return cls.exposed_allChats(user_id)
+        logging.info('Finish [Create Chat] - return: cls.exposed_getAllUserChats(user_id)')
+        return cls.exposed_getAllUserChats(user_id)
     @classmethod # this is an exposed method
-    def exposed_allChats(cls, user_id):
+    def exposed_getAllUserChats(cls, user_id):
         logging.info('Start [All Chat]')
         userChatList = {}
         for chat in ChatController.allUserChat(user_id=user_id):
@@ -205,6 +205,12 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_createGroup(cls, user_id, group_name):
         logging.info('Start [CREATE GROUP]')
+        if len(UserController.findBy_ID(user_id=user_id)) == 0:
+            logging.info('Finish [User All Groups] - return: @USER/NOTFOUND')
+            return {
+                'type': '@USER/NOTFOUND',
+                'payload': { }
+            }
         if len(group_name) == 0:
             logging.info('Finish [CREATE GROUP] - return: @VALIDATION/SMALL_NAME')
             return {
@@ -226,7 +232,9 @@ class ServerService(rpyc.Service):
             'payload': {
                 'id': group[0],
                 'name': group[1],
-                'created_at': group[2]
+                'join_at': group[2],
+                'created_at': group[2],
+                'messages': { }
             }
         }
     @classmethod # this is an exposed method
@@ -249,7 +257,7 @@ class ServerService(rpyc.Service):
         for userGroup in groupList:
             group = GroupController.findBy_ID(userGroup[2])
             groupData.setdefault(userGroup[2], {
-                'group_id': userGroup[2],
+                'id': userGroup[2],
                 'name': group[1],
                 'join_at': userGroup[3],
                 'created_at': group[2],
@@ -263,10 +271,10 @@ class ServerService(rpyc.Service):
     @classmethod # this is an exposed method
     def exposed_addUserToGroup(cls, user_id, group_id):
         logging.info('Start [Add User To a Group]')
-        if len(GroupController.findBy_ID(group_id=group_id)) == 0:
-            logging.info('Finish [Add User To a Group] - return: @GROUP/NOTFOUND')
+        if len(UserController.findBy_ID(user_id=user_id)) == 0:
+            logging.info('Finish [Add User To a Group] - return: @USER/NOTFOUND')
             return {
-                'type': '@GROUP/NOTFOUND',
+                'type': '@USER/NOTFOUND',
                 'payload': { }
             }
         if len(GroupController.findBy_ID(group_id=group_id)) == 0:
@@ -292,8 +300,7 @@ class ServerService(rpyc.Service):
                 }
             for message in GroupController.getMessages(group_id=group[0]):
                 messageHistory.setdefault(message[3], {
-                    'user_id': message[1],
-                    'group_id': message[2],
+                    'sender_id': message[1],
                     'message': message[4],
                     'created_at': message[3]
                 })
@@ -303,6 +310,7 @@ class ServerService(rpyc.Service):
                     'type': '@GROUP/MESSAGE/ZERO',
                     'payload': { }
                 }
+            logging.debug('[GROUP MESSAGE HISTORY] - ', messageHistory)
             logging.info('Finish [GROUP MESSAGE HISTORY] - return: @GROUP/MESSAGE/DATA')
             return {
                 'type': '@GROUP/MESSAGE/DATA',
@@ -315,7 +323,7 @@ class ServerService(rpyc.Service):
                 'payload': { }
             }
     @classmethod # this is an exposed method
-    def exposed_sendMessageUser(cls, user_id, group_id, message):
+    def exposed_groupSendMessage(cls, user_id, group_id, message):
         logging.info('Start [SEND GROUP MESSAGE]')
         group = GroupController.findBy_ID(group_id=group_id)
         if len(group) == 0:

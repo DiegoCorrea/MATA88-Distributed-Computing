@@ -50,15 +50,16 @@ def readEmailFromKey():
     while inText == '':
         try:
             inText = raw_input("Email: ")
+            if re.match(r"[^@]+@[^@]+\.[^@]+", inText) == None:
+                print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+                print '\tMessage: Please type a valid email address'
+                inText == ''
         except KeyboardInterrupt:
             exitProgramWithSuccess()
         except (NameError, SyntaxError):
             print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
             print '\tMessage: Wrong Input, try again!'
             inText = ''
-        if re.match(r"[^@]+@[^@]+\.[^@]+", inText) == None:
-            print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-            print '\tMessage: Please type a valid email address'
     return inText
 def readMenuChoiceFromKey():
     try:

@@ -367,8 +367,17 @@ class ServerService(rpyc.Service):
                 'payload': { }
             }
         ContactController.create(user_id=user_id, contact_id=contact_id)
-        logging.info('Finish [Add Contact] - return: cls.exposed_allUserContacts(user_id)')
-        return cls.exposed_getAllUserContacts(user_id)
+        logging.info('Finish [Add Contact] - return: @USER/CONTACT/DATA')
+        contact = ContactController.findBy_ID(user_id=user_id, contact_id=contact_id)
+        userContact = UserController.findBy_ID(user_id=contact[2])
+        return {
+            'type': '@USER/CONTACT/DATA',
+            'payload': {
+                'email': userContact[0],
+                'name': userContact[1],
+                'created_at': contact[3]
+            }
+        }
     @classmethod # this is an exposed method
     def exposed_getAllUserContacts(cls, user_id):
         user = UserController.findBy_ID(user_id=user_id)
@@ -389,7 +398,7 @@ class ServerService(rpyc.Service):
         for contact in contacts:
             contactData = UserController.findBy_email(contact[2])
             userContactList.setdefault(contact[2], {
-                'contact_id': contact[2],
+                'email': contactData[0],
                 'name': contactData[1],
                 'created_at': contact[3],
             })

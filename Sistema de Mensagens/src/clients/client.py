@@ -190,17 +190,17 @@ def printGroup(data):
     print '--------------------------------------------------'
 def printAllGroups():
     global STORE
-    print '--------------------------------------------------'
-    print '=================== Group List ==================='
     if len(STORE['groups']) > 0:
         for group_id in STORE['groups']:
             printGroup(STORE['groups'][group_id])
     else:
-        print '--------------------------------------------------'
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '+ + + + [Message] -> No groups added'
         print '##################################################'
 def screenPrintAllGroups():
     printScreenHeader()
+    print '--------------------------------------------------'
+    print '=================== Group List ==================='
     printAllGroups()
 ################################################################################
 def remoteAddUserToAGroup(group_id):
@@ -419,23 +419,29 @@ def groupScreen():
         waitEnter()
 ################################################################################
 ################################################################################
-
+############################## Contact Functions ###############################
 ################################################################################
 ################################################################################
+def printContact(data):
+    print '--------------------------------------------------'
+    print 'Name: ', data['name']
+    print 'Email: ', data['email']
+    print 'Added at: ', data['created_at']
+    print '--------------------------------------------------'
 def printAllContacts():
-    printScreenHeader()
-    print '##################################################'
-    print '################## All Contacts ##################'
-    print '##################################################'
     if len(STORE['contacts']) > 0:
         for contact in STORE['contacts']:
-            print 'Name: ', STORE['contacts'][contact]['name']
-            print 'Email: ', STORE['contacts'][contact]['contact_id']
-            print '--------------------------------------------------'
+            printContact(STORE['contacts'][contact])
     else:
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: No contacts yet'
-    print '##################################################'
+        print '##################################################'
+def screenPrintAllContacts():
+    printScreenHeader()
+    print '--------------------------------------------------'
+    print '================== All Contacts =================='
+    printAllContacts()
+################################################################################
 def remoteGetAllUserContacts():
     try:
         data = SERVERCONNECTION.root.getAllUserContacts(user_id=STORE['user']['email'])
@@ -461,6 +467,7 @@ def getAllContacts():
         return ''
     if data['type'] == '@USER/CONTACT/DATA':
         STORE['contacts'] = data['payload']
+################################################################################
 def remoteaddContact(contact_id):
     try:
         data = SERVERCONNECTION.root.addContact(user_id=STORE['user']['email'], contact_id=contact_id)
@@ -485,22 +492,32 @@ def addContact(contact_id):
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: Connection Error!'
         return ''
-    print '-> ', contact_id,' now is your friend!'
-    STORE['contacts'] = data['payload']
+    if data['type'] == '@USER/CONTACT/DATA':
+        STORE['contacts'][data['payload']['email']] = data['payload']
+        return data['payload']
+def screenAddContact():
+    printScreenHeader()
+    print '--------------------------------------------------'
+    print '================= Add a Contact =================='
+    print '--------------------------------------------------'
+    payload = addContact(contact_id=readEmailFromKey())
+    if len(payload) > 0:
+        printContact(payload)
+################################################################################
 def userContactScreen():
+    getAllContacts()
     menuChoice = 10
     global STORE
     while True:
         printScreenHeader()
-        print '1 - Add Friend'
-        print '2 - All Friends'
+        print '1 - Add Contact'
+        print '2 - All Contacts'
         print '0 - Back to main screen'
         menuChoice = readMenuChoiceFromKey()
         if menuChoice == 1:
-            addContact(contact_id=readEmailFromKey())
+            screenAddContact()
         elif menuChoice == 2:
-            getAllContacts()
-            printAllContacts()
+            screenPrintAllContacts()
         elif menuChoice == 0:
             return ''
         waitEnter()
@@ -680,7 +697,7 @@ def userChatScreen():
 def mainScreen():
     while True:
         printScreenHeader()
-        print('1 - Friends Screen')
+        print('1 - Contacts Screen')
         print('2 - Chats Screen')
         print('3 - Groups Screen')
         print('0 - Exit BroZap')
@@ -774,6 +791,7 @@ def loginScreen():
         waitEnter()
 def loginConfirmation():
     printScreenHeader()
+    printAllContacts()
     printAllGroups()
 ################################################################################
 ################################################################################

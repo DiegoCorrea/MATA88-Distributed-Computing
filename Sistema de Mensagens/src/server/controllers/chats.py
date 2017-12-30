@@ -42,7 +42,7 @@ def getChatWith(user_id, contact_id):
         return []
     return data
 
-def getChatMessages(chat_id, limit=20):
+def getMessages(chat_id, limit=20):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
@@ -59,7 +59,7 @@ def getChatMessages(chat_id, limit=20):
         data.append(linha)
     return data
 
-def setChatMessage(chat_id, sender_id, message):
+def sendMessage(chat_id, sender_id, message):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""

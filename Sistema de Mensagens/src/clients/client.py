@@ -295,7 +295,7 @@ def printGroupMessages(group_id):
     else:
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: No messages yet'
-    print '##################################################'
+        print '##################################################'
 def remoteSendGroupMessage(group_id, message):
     try:
         data = SERVERCONNECTION.root.sendGroupMessage(user_id=STORE['user']['email'], group_id=group_id, message=message)
@@ -395,7 +395,7 @@ def screenGroupChat():
             text = ''
             waitEnter()
 ################################################################################
-def groupScreen():
+def screenGroup():
     global STORE
     getAllUserGroups()
     while True:
@@ -505,7 +505,7 @@ def screenAddContact():
     if len(payload) > 0:
         printContact(payload)
 ################################################################################
-def userContactScreen():
+def screenContacts():
     getAllContacts()
     menuChoice = 10
     global STORE
@@ -524,31 +524,56 @@ def userContactScreen():
         waitEnter()
 ################################################################################
 ################################################################################
+######################### User Chat Functions ##################################
 ################################################################################
-def printChat(contact_id):
-    printScreenHeader()
-    print '##################################################'
-    print '# Chat with ', contact_id
-    print '##################################################'
+################################################################################
+def remoteCreateChat(contact_id):
+    try:
+         data = SERVERCONNECTION.root.createChat(user_id=STORE['user']['email'], contact_id=contact_id)
+         return data
+    except (IndexError, socket.error, AttributeError, EOFError):
+        return {
+            'type': 'ERROR/CONNECTION',
+            'payload': { }
+        }
+def createChat(email):
+    global STORE
+    data = remoteCreateChat(contact_id=email)
+    if data['type'] == '@USER/NOTFOUND':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: User not found'
+        return ''
+    if data['type'] == 'ERROR/CONNECTION':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: Connection Error!'
+        return ''
+    if data['type'] == '@CHAT/DATA':
+        STORE['chats'][data['payload']['email']] = data['payload']
+################################################################################
+def printChatMessages(contact_id):
+    global STORE
+    printChat(STORE['contacts'][contact_id])
     if len(STORE['chats'][contact_id]['messages']) > 0:
-        for chat_message in STORE['chats'][contact_id]['messages']:
-            print 'De: ', STORE['chats'][contact_id]['messages'][chat_message]['sender_id']
-            print STORE['chats'][contact_id]['messages'][chat_message]['message']
+        for message in STORE['chats'][contact_id]['messages']:
+            print 'De: ', STORE['chats'][contact_id]['messages'][message]['sender_id'], ' ', STORE['chats'][contact_id]['messages'][message]['created_at']
+            print STORE['chats'][contact_id]['messages'][message]['message']
+            print '--------------------------------------------------'
     else:
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-        print '\tMessage: No messages yet'
-    print '##################################################'
-def remoteSendMessage(contact_id, message):
+        print '\tMessage: No messages yet!'
+        print '##################################################'
+def remoteSendChatMessage(contact_id, message):
     try:
-        data = SERVERCONNECTION.root.sendMessageUser(user_id=STORE['user']['email'], contact_id=contact_id, message=message)
+        data = SERVERCONNECTION.root.sendChatMessage(user_id=STORE['user']['email'], contact_id=contact_id, message=message)
         return data
     except (IndexError, socket.error, AttributeError, EOFError):
         return {
             'type': 'ERROR/CONNECTION',
             'payload': { }
         }
-def sendMessege(contact_id, message):
-    data = remoteSendMessage(contact_id, message)
+def sendChatMessage(contact_id, message):
+    global STORE
+    data = remoteSendChatMessage(contact_id, message)
     if data['type'] == '@USER/NOTFOUND':
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: User not found'
@@ -561,21 +586,27 @@ def sendMessege(contact_id, message):
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: Connection Error!'
         return ''
-    STORE['chats'][contact_id]['messages'] = data['payload']
-def remoteGetMessages(contact_id):
+    if data['type'] == '@CHAT/MESSAGE/DATA':
+        STORE['chats'][contact_id]['messages'] = data['payload']
+def remoteGetChatMessages(contact_id):
     try:
-        data = SERVERCONNECTION.root.chatMessageHistory(user_id=STORE['user']['email'], contact_id=contact_id)
+        data = SERVERCONNECTION.root.getChatMessageHistory(user_id=STORE['user']['email'], contact_id=contact_id)
         return data
     except (IndexError, socket.error, AttributeError, EOFError, TypeError):
         return {
             'type': 'ERROR/CONNECTION',
             'payload': { }
         }
-def getMessages(contact_id):
-    data = remoteGetMessages(contact_id)
+def getChatMessages(contact_id):
+    global STORE
+    data = remoteGetChatMessages(contact_id)
     if data['type'] == '@USER/NOTFOUND':
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: User not found'
+        return ''
+    if data['type'] == '@CHAT/NOTFOUND':
+        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
+        print '\tMessage: CHAT not found'
         return ''
     if data['type'] == '@CHAT/MESSAGE/ZERO':
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
@@ -589,51 +620,33 @@ def getMessages(contact_id):
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: Server Error'
         return ''
-    STORE['chats'][contact_id]['messages'] = data['payload']
-def remoteCreateChat(contact_id):
-    try:
-         data = SERVERCONNECTION.root.exposed_createChat(user_id=STORE['user']['email'], contact_id=contact_id)
-         return data
-    except (IndexError, socket.error, AttributeError, EOFError):
-        return {
-            'type': 'ERROR/CONNECTION',
-            'payload': { }
-        }
-def createChat(email):
-     data = remoteCreateChat(contact_id=email)
-     if data['type'] == '@USER/NOTFOUND':
-         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-         print '\tMessage: User not found'
-         return ''
-     if data['type'] == 'ERROR/CONNECTION':
-         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-         print '\tMessage: Connection Error!'
-         return ''
-     STORE['chats'] = data['payload']
-def userMessageScreen(contact_id):
-    if contact_id not in STORE['chats']:
+    if data['type'] == '@CHAT/MESSAGE/DATA':
+        STORE['chats'][contact_id]['messages'] = data['payload']
+def screenContactChat():
+    contact_id = readEmailFromKey()
+    if contact_id not in STORE['contacts']:
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-        print '\tMessage: No friendships, cant send messages!'
+        print '\tMessage: No friendships, cant\'t send messages!'
         return ''
     if contact_id not in STORE['chats']:
         createChat(contact_id)
     text = ''
     while True:
         try:
-            getMessages(contact_id)
-            printChat(contact_id)
+            getChatMessages(contact_id)
+            printScreenHeader()
+            printChatMessages(contact_id)
             print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
             print "Commands:"
             print "\t[:q] to exit"
             print "\t[:u] to update chat"
-            text = raw_input("Text:")
+            text = raw_input("Text: \n")
             if text == ':q':
                 return ''
-            elif text == ':u':
+            elif text == ':u' or text == '':
                 pass
             else:
-                sendMessege(contact_id, text)
-                printChat(contact_id)
+                sendChatMessage(contact_id, text)
         except KeyboardInterrupt:
             exitProgramWithSuccess()
         except (NameError, SyntaxError):
@@ -642,18 +655,28 @@ def userMessageScreen(contact_id):
             text = ''
             waitEnter()
 ################################################################################
-def printChatList():
+def printChat(data):
+    print '--------------------------------------------------'
+    print '+ Chat With: ', data['name']
+    print '+ Email: ', data['email']
+    print '+ Since at: ', data['created_at']
+    print '+ Last update: '
+    print '--------------------------------------------------'
+def printAllChats():
     global STORE
-    print '##################################################'
-    print '=================== Chats List ==================='
     if len(STORE['chats']) > 0:
         for chat in STORE['chats']:
-            print '--------------------------------------------------'
-            print 'Chat With: ', STORE['chats'][chat]['chatWith']
+            printChat(STORE['chats'][chat])
     else:
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: You have not chat yet'
     print '##################################################'
+def screenPrintAllChats():
+    printScreenHeader()
+    print '--------------------------------------------------'
+    print '=================== Chat List ===================='
+    printAllChats()
+################################################################################
 def remoteGetAllUserChats():
     try:
         data = SERVERCONNECTION.root.getAllUserChats(user_id=STORE['user']['email'])
@@ -664,6 +687,7 @@ def remoteGetAllUserChats():
             'payload': { }
         }
 def getUserChats():
+    global STORE
     data = remoteGetAllUserChats()
     if data['type'] == '@CHAT/ZERO':
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
@@ -673,8 +697,11 @@ def getUserChats():
         print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
         print '\tMessage: Connection Error!'
         return ''
-    STORE['chats'] =  data['payload']
-def userChatScreen():
+    if data['type'] == '@CHAT/DATA':
+        STORE['chats'] =  data['payload']
+################################################################################
+def screenUserChat():
+    getUserChats()
     menuChoice = 10
     global STORE
     while True:
@@ -684,16 +711,16 @@ def userChatScreen():
         print '0 - Back to main screen'
         menuChoice = readMenuChoiceFromKey()
         if menuChoice == 1:
-            getUserChats()
-            printChatList()
+            screenPrintAllChats()
         elif menuChoice == 2:
-            userMessageScreen(contact_id=readEmailFromKey())
+            screenContactChat()
         elif menuChoice == 0:
             return ''
         waitEnter()
 ################################################################################
 ################################################################################
-# MAIN SCREEN
+################################# MAIN SCREEN ##################################
+################################################################################
 ################################################################################
 def mainScreen():
     while True:
@@ -704,18 +731,19 @@ def mainScreen():
         print('0 - Exit BroZap')
         menuChoice = readMenuChoiceFromKey()
         if menuChoice == 1:
-            userContactScreen()
+            screenContacts()
         elif menuChoice == 2:
-            userChatScreen()
+            screenUserChat()
         elif menuChoice == 3:
-            groupScreen()
+            screenGroup()
         elif menuChoice == 0:
             exitProgramWithSuccess()
         else:
-            waitEnter
+            waitEnter()
 ################################################################################
 ################################################################################
-# LOGIN SYSTEM AND CREATE ACCOUNT SYSTEM
+#################### LOGIN SYSTEM AND CREATE ACCOUNT SYSTEM ####################
+################################################################################
 ################################################################################
 def remoteLogOnSystem(email):
     try:

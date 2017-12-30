@@ -269,7 +269,7 @@ class ServerService(rpyc.Service):
             'payload': groupData
         }
     @classmethod # this is an exposed method
-    def exposed_addUserToGroup(cls, user_id, group_id):
+    def exposed_addUserToAGroup(cls, user_id, group_id):
         logging.info('Start [Add User To a Group]')
         if len(UserController.findBy_ID(user_id=user_id)) == 0:
             logging.info('Finish [Add User To a Group] - return: @USER/NOTFOUND')
@@ -333,7 +333,7 @@ class ServerService(rpyc.Service):
                 'payload': { }
             }
     @classmethod # this is an exposed method
-    def exposed_groupSendMessage(cls, user_id, group_id, message):
+    def exposed_sendGroupMessage(cls, user_id, group_id, message):
         logging.info('Start [SEND GROUP MESSAGE]')
         group = GroupController.findBy_ID(group_id=group_id)
         if len(group) == 0:

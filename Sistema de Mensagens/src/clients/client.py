@@ -548,12 +548,12 @@ def createChat(email):
         print '\tMessage: Connection Error!'
         return ''
     if data['type'] == '@CHAT/DATA':
-        STORE['chats'][data['payload']['email']] = data['payload']
+        STORE['chats'][data['payload']['id']] = data['payload']
 ################################################################################
 def printChatMessages(contact_id):
     global STORE
-    printChat(STORE['contacts'][contact_id])
-    if len(STORE['chats'][contact_id]['messages']) > 0:
+    printChat(STORE['chats'][contact_id])
+    if len(STORE['chats']) > 0 and len(STORE['chats'][contact_id]['messages']) > 0:
         for message in STORE['chats'][contact_id]['messages']:
             print 'De: ', STORE['chats'][contact_id]['messages'][message]['sender_id'], ' ', STORE['chats'][contact_id]['messages'][message]['created_at']
             print STORE['chats'][contact_id]['messages'][message]['message']
@@ -587,7 +587,7 @@ def sendChatMessage(contact_id, message):
         print '\tMessage: Connection Error!'
         return ''
     if data['type'] == '@CHAT/MESSAGE/DATA':
-        STORE['chats'][contact_id]['messages'] = data['payload']
+        STORE['chats'][contact_id] = data['payload']
 def remoteGetChatMessages(contact_id):
     try:
         data = SERVERCONNECTION.root.getChatMessageHistory(user_id=STORE['user']['email'], contact_id=contact_id)
@@ -621,13 +621,9 @@ def getChatMessages(contact_id):
         print '\tMessage: Server Error'
         return ''
     if data['type'] == '@CHAT/MESSAGE/DATA':
-        STORE['chats'][contact_id]['messages'] = data['payload']
+        STORE['chats'][contact_id] = data['payload']
 def screenContactChat():
     contact_id = readEmailFromKey()
-    if contact_id not in STORE['contacts']:
-        print '+ + + + + + + + + + [Messages] + + + + + + + + + +'
-        print '\tMessage: No friendships, cant\'t send messages!'
-        return ''
     if contact_id not in STORE['chats']:
         createChat(contact_id)
     text = ''
@@ -749,7 +745,8 @@ def remoteLogOnSystem(email):
     try:
         data = SERVERCONNECTION.root.userLogin(user_id=email)
         return data
-    except (IndexError, socket.error, AttributeError, EOFError):
+    except (IndexError, socket.error, AttributeError, EOFError), e:
+        print '+++ Erro: ', e
         return {
             'type': 'ERROR/CONNECTION',
             'payload': { }

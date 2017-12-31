@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
         message TEXT NOT NULL,
         created_at TEXT NOT NULL,
         FOREIGN KEY(sender_id) REFERENCES users(email),
-        FOREIGN KEY(chat_id) REFERENCES friendships(id)
+        FOREIGN KEY(chat_id) REFERENCES chats(id)
 );
 """)
 print('...Ok!')

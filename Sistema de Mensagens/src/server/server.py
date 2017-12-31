@@ -122,6 +122,7 @@ class ServerService(rpyc.Service):
         return {
             'type': '@CHAT/DATA',
             'payload': {
+                'id': chat[0],
                 'email': contact[0],
                 'name': contact[1],
                 'created_at': chat[3],
@@ -164,6 +165,7 @@ class ServerService(rpyc.Service):
     def exposed_getChatMessageHistory(cls, user_id, contact_id):
         logging.info('Start [CHAT MESSAGE HISTORY]')
         try:
+            contact = UserController.findBy_ID(contact_id)
             chatMessageHistory = {}
             chat = ChatController.getChatWith(user_id, contact_id)
             if len(chat) == 0:
@@ -174,7 +176,6 @@ class ServerService(rpyc.Service):
                 }
             for chat_message in ChatController.getMessages(chat[0]):
                 chatMessageHistory.setdefault(chat_message[4], {
-                    'chat_id': chat_message[1],
                     'sender_id': chat_message[2],
                     'message': chat_message[3],
                     'created_at': chat_message[4]
@@ -188,7 +189,12 @@ class ServerService(rpyc.Service):
             logging.info('Finish [CHAT MESSAGE HISTORY] - return: @CHAT/MESSAGE/DATA')
             return {
                 'type': '@CHAT/MESSAGE/DATA',
-                'payload': collections.OrderedDict(sorted(chatMessageHistory.items()))
+                'payload': {
+                    'email': contact[0],
+                    'name': contact[1],
+                    'created_at': chat[3],
+                    'messages': collections.OrderedDict(sorted(chatMessageHistory.items()))
+                }
             }
         except TypeError:
             logging.error('Finish [CHAT MESSAGE HISTORY] - return: @SERVER/ERROR')

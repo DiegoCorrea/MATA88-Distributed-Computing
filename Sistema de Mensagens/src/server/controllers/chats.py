@@ -17,7 +17,7 @@ def allUserChat(user_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, user_id, contact_id, created_at FROM chats
+        SELECT * FROM chats
         WHERE user_id = ? OR contact_id = ?;
     """, (user_id, user_id,))
     itens = cursor.fetchall()
@@ -33,7 +33,7 @@ def getChatWith(user_id, contact_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, contact_id, created_at FROM chats
+        SELECT * FROM chats
         WHERE (user_id = ? AND contact_id = ?) OR (user_id = ? AND contact_id = ?);
     """, (user_id, contact_id, contact_id, user_id,))
     data = cursor.fetchone()

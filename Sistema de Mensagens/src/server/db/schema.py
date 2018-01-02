@@ -11,7 +11,7 @@ print('Users')
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
         email CHAR(64) NOT NULL PRIMARY KEY,
-        name VARCHAR(32) NOT NULL,
+        name VARCHAR(45) NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
 );
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS chats (
         id CHAR(64) NOT NULL PRIMARY KEY,
         user_id CHAR(64) NOT NULL,
         contact_id CHAR(64) NOT NULL,
-        created_at DATE NOT NULL,
+        created_at TEXT NOT NULL,
         FOREIGN KEY(user_id) REFERENCES users(email),
         FOREIGN KEY(contact_id) REFERENCES users(email)
 );
@@ -66,11 +66,11 @@ print('...Ok!')
 
 print('Users Groups ')
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS users_groups (
+CREATE TABLE IF NOT EXISTS user_groups (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         user_id CHAR(32)NOT NULL,
         group_id CHAR(32) NOT NULL,
-        created_at DATE NOT NULL,
+        created_at TEXT NOT NULL,
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(group_id) REFERENCES groups(id)
 );

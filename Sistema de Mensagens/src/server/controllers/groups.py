@@ -29,7 +29,7 @@ def allUsers(group_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT * FROM users_groups
+        SELECT * FROM user_groups
         WHERE group_id = ?;
     """, (group_id,))
     itens = cursor.fetchall()
@@ -45,7 +45,7 @@ def userGroups(user_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT * FROM users_groups
+        SELECT * FROM user_groups
         WHERE user_id = ?;
     """, (user_id,))
     itens = cursor.fetchall()
@@ -61,7 +61,7 @@ def addUser(user_id, group_id):
     conn = sqlite3.connect('./db/whatsApp.db')
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO users_groups (user_id, group_id, created_at)
+        INSERT INTO user_groups (user_id, group_id, created_at)
         VALUES (?, ?, ?)
     """, (user_id, group_id, strftime("%Y-%m-%d %H:%M:%S", gmtime())))
     conn.commit()

@@ -724,7 +724,7 @@ def mainScreen():
         print('1 - Contacts Screen')
         print('2 - Chats Screen')
         print('3 - Groups Screen')
-        print('0 - Exit BroZap')
+        print('0 - Exit Bottle of Messages')
         menuChoice = readMenuChoiceFromKey()
         if menuChoice == 1:
             screenContacts()
@@ -776,7 +776,7 @@ def remoteCreateUser(email, name):
         }
 def createAccount():
     print ' ______________________'
-    print '|  Welcome BroZap      |'
+    print '|  Welcome Bottle of Messages      |'
     print '|  Create new account  |'
     email = readEmailFromKey()
     name = readNameFromKey()
@@ -805,7 +805,7 @@ def loginScreen():
         print '#########################'
         print '# 1 - Login\t\t#'
         print '# 2 - Join Us\t\t#'
-        print '# 0 - Exit BroZap\t#'
+        print '# 0 - Exit Bottle of Messages\t#'
         print '#########################'
         menuChoice = readMenuChoiceFromKey()
         if menuChoice == 1:
